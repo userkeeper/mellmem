@@ -30,25 +30,40 @@
     font-size: 15px; -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: contain;
   }
-  body { padding: 0 0 68px; min-height: 100vh; }
+  body {
+    padding: 0 0 68px;
+    min-height: 100vh;
+    /* safe-area сверху чтобы контент не залезал под Dynamic Island
+       + запас на кнопки Telegram "Закрыть" и "•••" в fullscreen режиме */
+    padding-top: calc(env(safe-area-inset-top) + 44px);
+  }
+  /* Если Telegram не в fullscreen — его хедер есть, лишний отступ не нужен */
+  body.has-tg-header {
+    padding-top: env(safe-area-inset-top);
+  }
 
   /* ========== HEADER ========== */
   .header {
-    position: sticky; top: 0; z-index: 10;
-    background: rgba(255,255,255,0.85);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(255,255,255,0.92);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 0.5px solid var(--border);
-    padding: 10px 16px 8px;
+    padding: 12px 16px 10px;
   }
   @media (prefers-color-scheme: dark) {
-    .header { background: rgba(0,0,0,0.7); }
+    .header { background: rgba(0,0,0,0.82); }
+  }
+  .header-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px;
   }
   .header h1 {
     font-size: 22px; font-weight: 700; letter-spacing: -0.3px;
-    margin-bottom: 2px;
   }
-  .header .sub { font-size: 13px; color: var(--hint); }
+  .header .sub { font-size: 13px; color: var(--hint); flex-shrink: 0; }
 
   /* ========== SEARCH ========== */
   .search-wrap { padding: 10px 16px 4px; }
@@ -433,8 +448,10 @@
 <body>
 
 <div class="header" id="header">
-  <h1 id="page-title">MellMem</h1>
-  <div class="sub" id="sub-line">Загружаем…</div>
+  <div class="header-row">
+    <h1 id="page-title">MellMem</h1>
+    <div class="sub" id="sub-line">Загружаем…</div>
+  </div>
 </div>
 
 <!-- CATALOG TAB -->
@@ -560,8 +577,28 @@ const initData = tg?.initData || '';
 if (tg) {
   tg.ready();
   tg.expand();
-  // Пробуем раскрыть на весь экран (новый API)
-  try { tg.requestFullscreen?.(); } catch(e) {}
+
+  // Пытаемся раскрыть на весь экран (новый API Telegram 8.0+)
+  let isFullscreen = false;
+  try {
+    tg.requestFullscreen?.();
+    isFullscreen = !!tg.isFullscreen;
+  } catch(e) {}
+
+  // Если НЕ в fullscreen — у Telegram есть свой header, не нужен extra padding
+  if (!isFullscreen) {
+    document.body.classList.add('has-tg-header');
+  }
+
+  // Слушаем изменения fullscreen-режима
+  tg.onEvent?.('fullscreenChanged', () => {
+    if (tg.isFullscreen) {
+      document.body.classList.remove('has-tg-header');
+    } else {
+      document.body.classList.add('has-tg-header');
+    }
+  });
+
   try {
     tg.setHeaderColor?.('bg_color');
     tg.setBackgroundColor?.('bg_color');
