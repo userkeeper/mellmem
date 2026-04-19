@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Админка — MellMem</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f0f10; color: #fff;
+    padding: 20px; min-height: 100vh;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 22px; margin-bottom: 24px; }
+  h2 { font-size: 16px; margin: 20px 0 12px; color: #aaa; font-weight: 500; }
+
+  .auth-wrap {
+    max-width: 380px; margin: 80px auto;
+    background: #1a1a1c; padding: 24px; border-radius: 12px;
+  }
+
+  input, select, textarea, button { font-family: inherit; font-size: 14px; }
+  input[type="text"], input[type="number"], input[type="password"], select, textarea {
+    width: 100%; padding: 10px 12px;
+    background: #1a1a1c; border: 1px solid #2a2a2c; border-radius: 8px;
+    color: #fff; outline: none; margin-bottom: 12px;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #ff3b3b; }
+  label { display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; }
+  button {
+    padding: 10px 18px; background: #ff3b3b; color: #fff;
+    border: none; border-radius: 8px; cursor: pointer; font-weight: 500;
+  }
+  button:hover { background: #e03030; }
+  button.secondary { background: #2a2a2c; }
+  button.danger { background: #2a2a2c; color: #ff6b6b; }
+  button.success { background: #2a2a2c; color: #4caf50; }
+
+  .upload-zone {
+    border: 2px dashed #2a2a2c; border-radius: 12px;
+    padding: 32px 20px; text-align: center; cursor: pointer;
+    margin-bottom: 16px; transition: all 0.15s;
+  }
+  .upload-zone:hover, .upload-zone.drag {
+    border-color: #ff3b3b; background: rgba(255,59,59,0.05);
+  }
+  .upload-zone input { display: none; }
+  .upload-zone .hint { font-size: 13px; color: #888; margin-top: 6px; }
+
+  .preview-box {
+    margin: 12px 0; background: #1a1a1c; border-radius: 8px;
+    padding: 12px; display: flex; gap: 12px; align-items: center;
+  }
+  .preview-box video { width: 80px; height: 120px; border-radius: 6px; object-fit: cover; }
+  .preview-box .info { flex: 1; font-size: 13px; color: #aaa; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  th, td {
+    text-align: left; padding: 10px 8px;
+    border-bottom: 1px solid #2a2a2c; font-size: 13px;
+  }
+  th { color: #888; font-weight: 500; }
+  tr td img { width: 40px; height: 60px; object-fit: cover; border-radius: 4px; }
+
+  .tag-input-wrap {
+    display: flex; gap: 6px; flex-wrap: wrap; padding: 6px;
+    background: #1a1a1c; border: 1px solid #2a2a2c; border-radius: 8px; margin-bottom: 12px;
+  }
+  .tag-item {
+    background: #2a2a2c; padding: 4px 10px; border-radius: 999px;
+    font-size: 12px; display: flex; gap: 6px; align-items: center;
+  }
+  .tag-item .x { cursor: pointer; color: #888; }
+  .tag-input-wrap input {
+    border: none; background: transparent; padding: 4px;
+    margin: 0; flex: 1; min-width: 120px;
+  }
+
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 20px;
+    border-bottom: 1px solid #2a2a2c;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 10px 16px; cursor: pointer; color: #888;
+    border-bottom: 2px solid transparent; font-size: 14px;
+    white-space: nowrap;
+  }
+  .tab.active { color: #fff; border-color: #ff3b3b; }
+  .tab .badge {
+    display: inline-block; background: #ff3b3b; color: #fff;
+    font-size: 11px; padding: 1px 7px; border-radius: 999px; margin-left: 6px;
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .status {
+    padding: 10px 14px; border-radius: 8px; margin-bottom: 12px;
+    font-size: 13px; display: none;
+  }
+  .status.success { background: rgba(46,160,67,0.15); color: #3fb950; display: block; }
+  .status.error { background: rgba(248,81,73,0.15); color: #ff6b6b; display: block; }
+  .status.info { background: rgba(31,111,235,0.15); color: #58a6ff; display: block; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .stat-card { background: #1a1a1c; border-radius: 8px; padding: 14px; }
+  .stat-card .n { font-size: 22px; font-weight: 600; }
+  .stat-card .l { font-size: 12px; color: #888; margin-top: 2px; }
+
+  /* Moderation cards */
+  .mod-card {
+    background: #1a1a1c; border-radius: 10px;
+    padding: 14px; margin-bottom: 12px;
+    display: grid; grid-template-columns: 120px 1fr; gap: 14px;
+  }
+  .mod-card video { width: 120px; height: 180px; border-radius: 6px; object-fit: cover; background: #000; }
+  .mod-card .info h3 { font-size: 15px; margin-bottom: 6px; }
+  .mod-card .info .meta { font-size: 12px; color: #888; margin-bottom: 8px; }
+  .mod-card .actions { display: flex; gap: 8px; margin-top: 10px; }
+  .mod-card .actions button { padding: 8px 14px; font-size: 13px; }
+  .mod-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+  .mod-tag { background: #2a2a2c; padding: 2px 8px; border-radius: 4px; font-size: 11px; color: #aaa; }
+</style>
+</head>
+<body>
+
+<div id="auth" class="auth-wrap">
+  <h1>Вход в админку</h1>
+  <input type="password" id="auth-password" placeholder="Пароль администратора" />
+  <button id="auth-btn" style="width:100%;">Войти</button>
+  <div id="auth-error" style="color:#ff6b6b;font-size:13px;margin-top:10px;display:none;">Неверный пароль</div>
+</div>
+
+<div id="main" class="container" style="display:none;">
+  <h1>MellMem — админка</h1>
+
+  <div class="stats-grid" id="stats-grid"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="moderate">Модерация <span class="badge" id="mod-badge" style="display:none;">0</span></div>
+    <div class="tab" data-tab="upload">Загрузить</div>
+    <div class="tab" data-tab="manage">Все футажи</div>
+    <div class="tab" data-tab="categories">Категории</div>
+  </div>
+
+  <!-- MODERATION -->
+  <div class="tab-content active" id="tab-moderate">
+    <div id="moderate-list"></div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="tab-content" id="tab-upload">
+    <div id="upload-status" class="status"></div>
+    <label>Видео файл (MP4, до 100 MB)</label>
+    <div class="upload-zone" id="drop-zone">
+      <input type="file" id="file-input" accept="video/mp4,video/quicktime" />
+      <div style="font-size: 15px;">📹 Нажми или перетащи файл</div>
+      <div class="hint">Лучше вертикальное 9:16, 5–15 сек</div>
+    </div>
+    <div id="file-preview" style="display:none;"></div>
+    <label>Название</label>
+    <input type="text" id="f-title" placeholder="Например: ОРЁЛ!!!" />
+    <label>Категория</label>
+    <select id="f-category"></select>
+    <label>Теги (Enter чтобы добавить)</label>
+    <div class="tag-input-wrap" id="tags-wrap">
+      <input type="text" id="tag-input" placeholder="добавить тег..." />
+    </div>
+    <label>Источник (опционально)</label>
+    <input type="text" id="f-source" placeholder="https://youtube.com/watch?v=..." />
+    <button id="upload-btn" style="width:100%;margin-top:8px;">Загрузить в библиотеку</button>
+  </div>
+
+  <!-- MANAGE -->
+  <div class="tab-content" id="tab-manage">
+    <input type="text" id="manage-search" placeholder="Поиск по названию или тегу..." />
+    <table>
+      <thead><tr>
+        <th></th><th>Название</th><th>Категория</th><th>Автор</th><th>↓</th><th></th>
+      </tr></thead>
+      <tbody id="manage-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- CATEGORIES -->
+  <div class="tab-content" id="tab-categories">
+    <label>Новая категория</label>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="new-cat-name" placeholder="Название" style="flex:1;" />
+      <input type="text" id="new-cat-slug" placeholder="slug" style="flex:1;" />
+      <button id="add-cat-btn">Добавить</button>
+    </div>
+    <table>
+      <thead><tr><th>Название</th><th>Slug</th><th>Футажей</th><th></th></tr></thead>
+      <tbody id="cats-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let token = localStorage.getItem('admin_token') || '';
+let tags = [], categories = [], selectedFile = null, allFootage = [];
+
+document.getElementById('auth-btn').addEventListener('click', async () => {
+  const pw = document.getElementById('auth-password').value;
+  const res = await fetch(`${API}/api/admin/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw })
+  });
+  if (res.ok) {
+    token = (await res.json()).token;
+    localStorage.setItem('admin_token', token);
+    showMain();
+  } else document.getElementById('auth-error').style.display = 'block';
+});
+
+function showMain() {
+  document.getElementById('auth').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  loadStats();
+  loadCategories();
+  loadFootage();
+  loadPending();
+  setInterval(loadStats, 30000); // обновляем stats раз в 30 сек
+}
+
+if (token) {
+  fetch(`${API}/api/admin/check`, { headers: { 'x-admin-token': token } })
+    .then(r => r.ok ? showMain() : localStorage.removeItem('admin_token'));
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'moderate') loadPending();
+  });
+});
+
+// ==== Stats ====
+async function loadStats() {
+  const res = await fetch(`${API}/api/admin/stats`, { headers: { 'x-admin-token': token } });
+  const s = await res.json();
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="n">${s.total_footage}</div><div class="l">Футажей</div></div>
+    <div class="stat-card"><div class="n">${s.pending_count}</div><div class="l">На модерации</div></div>
+    <div class="stat-card"><div class="n">${s.total_downloads}</div><div class="l">Всего скачиваний</div></div>
+    <div class="stat-card"><div class="n">${s.downloads_24h}</div><div class="l">За 24ч</div></div>
+    <div class="stat-card"><div class="n">${s.total_users}</div><div class="l">Юзеров</div></div>
+  `;
+  const badge = document.getElementById('mod-badge');
+  if (s.pending_count > 0) {
+    badge.style.display = 'inline-block';
+    badge.textContent = s.pending_count;
+  } else badge.style.display = 'none';
+}
+
+// ==== Moderation ====
+async function loadPending() {
+  const res = await fetch(`${API}/api/admin/pending`, { headers: { 'x-admin-token': token } });
+  const items = await res.json();
+  const el = document.getElementById('moderate-list');
+  if (!items.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px;color:#666;">Очередь пуста ✓</div>`;
+    return;
+  }
+  el.innerHTML = items.map(i => {
+    const uploader = i.uploader_username
+      ? '@' + i.uploader_username
+      : (i.uploader_name || 'anon');
+    return `
+      <div class="mod-card">
+        <video src="${i.video_url}" controls muted></video>
+        <div class="info">
+          <h3>${escapeHtml(i.title)}</h3>
+          <div class="meta">
+            От: ${escapeHtml(uploader)} · Категория: ${escapeHtml(i.category_name || '—')}
+            ${i.duration ? ' · ' + Math.round(i.duration) + 'с' : ''}
+            ${i.source_url ? `<br>Источник: <a href="${i.source_url}" target="_blank" style="color:#58a6ff;">${escapeHtml(i.source_url.slice(0, 60))}</a>` : ''}
+          </div>
+          <div class="mod-tags">
+            ${(i.tags || []).map(t => `<span class="mod-tag">#${escapeHtml(t)}</span>`).join('')}
+          </div>
+          <div class="actions">
+            <button class="success" data-id="${i.id}" data-act="approve">✓ Одобрить</button>
+            <button class="danger" data-id="${i.id}" data-act="reject">✕ Отклонить</button>
+            ${i.uploader_tg_id ? `<button class="secondary" data-ban="${i.uploader_tg_id}">Бан юзера</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  el.querySelectorAll('[data-act]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await fetch(`${API}/api/admin/moderate/${btn.dataset.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ action: btn.dataset.act })
+      });
+      loadPending(); loadStats(); loadFootage();
+    });
+  });
+  el.querySelectorAll('[data-ban]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Забанить этого юзера?')) return;
+      await fetch(`${API}/api/admin/ban-user/${btn.dataset.ban}`, {
+        method: 'POST', headers: { 'x-admin-token': token }
+      });
+      alert('Пользователь забанен');
+    });
+  });
+}
+
+// ==== File upload ====
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+function handleFile(f) {
+  selectedFile = f;
+  const url = URL.createObjectURL(f);
+  document.getElementById('file-preview').innerHTML = `
+    <div class="preview-box">
+      <video src="${url}" muted></video>
+      <div class="info">
+        <div style="color:#fff;margin-bottom:4px;">${f.name}</div>
+        <div>${(f.size / 1024 / 1024).toFixed(1)} MB</div>
+      </div>
+    </div>
+  `;
+  document.getElementById('file-preview').style.display = 'block';
+  if (!document.getElementById('f-title').value) {
+    document.getElementById('f-title').value = f.name.replace(/\.[^.]+$/, '');
+  }
+}
+
+// ==== Tags ====
+const tagInput = document.getElementById('tag-input');
+tagInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const t = tagInput.value.trim().toLowerCase();
+    if (t && !tags.includes(t)) { tags.push(t); renderTags(); }
+    tagInput.value = '';
+  } else if (e.key === 'Backspace' && !tagInput.value && tags.length) {
+    tags.pop(); renderTags();
+  }
+});
+
+function renderTags() {
+  const wrap = document.getElementById('tags-wrap');
+  wrap.querySelectorAll('.tag-item').forEach(el => el.remove());
+  tags.forEach(t => {
+    const el = document.createElement('span');
+    el.className = 'tag-item';
+    el.innerHTML = `${t}<span class="x">×</span>`;
+    el.querySelector('.x').addEventListener('click', () => {
+      tags = tags.filter(x => x !== t); renderTags();
+    });
+    wrap.insertBefore(el, tagInput);
+  });
+}
+
+// ==== Categories ====
+async function loadCategories() {
+  categories = await fetch(`${API}/api/categories`).then(r => r.json());
+  document.getElementById('f-category').innerHTML =
+    categories.map(c => `<option value="${c.slug}">${c.name}</option>`).join('');
+  renderCatsTable();
+}
+
+function renderCatsTable() {
+  document.getElementById('cats-tbody').innerHTML = categories.map(c => `
+    <tr>
+      <td>${c.name}</td>
+      <td><code style="color:#888;">${c.slug}</code></td>
+      <td>${c.count || 0}</td>
+      <td><button class="danger" data-del="${c.slug}">Удалить</button></td>
+    </tr>
+  `).join('');
+  document.querySelectorAll('[data-del]').forEach(b => {
+    b.addEventListener('click', async () => {
+      if (!confirm('Удалить категорию?')) return;
+      await fetch(`${API}/api/admin/categories/${b.dataset.del}`, {
+        method: 'DELETE', headers: { 'x-admin-token': token }
+      });
+      loadCategories();
+    });
+  });
+}
+
+document.getElementById('add-cat-btn').addEventListener('click', async () => {
+  const name = document.getElementById('new-cat-name').value.trim();
+  const slug = document.getElementById('new-cat-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  if (!name || !slug) return;
+  await fetch(`${API}/api/admin/categories`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+    body: JSON.stringify({ name, slug })
+  });
+  document.getElementById('new-cat-name').value = '';
+  document.getElementById('new-cat-slug').value = '';
+  loadCategories();
+});
+
+// ==== Admin upload ====
+function showStatus(msg, type = 'info') {
+  const el = document.getElementById('upload-status');
+  el.textContent = msg;
+  el.className = 'status ' + type;
+  if (type === 'success') setTimeout(() => el.style.display = 'none', 4000);
+}
+
+document.getElementById('upload-btn').addEventListener('click', async () => {
+  if (!selectedFile) { showStatus('Выбери видео файл', 'error'); return; }
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { showStatus('Укажи название', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('video', selectedFile);
+  fd.append('title', title);
+  fd.append('category_slug', document.getElementById('f-category').value);
+  fd.append('tags', JSON.stringify(tags));
+  fd.append('source_url', document.getElementById('f-source').value.trim());
+
+  showStatus('Загружаем и генерируем превью…', 'info');
+  document.getElementById('upload-btn').disabled = true;
+
+  try {
+    const res = await fetch(`${API}/api/admin/upload`, {
+      method: 'POST', headers: { 'x-admin-token': token }, body: fd
+    });
+    if (!res.ok) throw new Error((await res.json()).error || 'upload failed');
+    const data = await res.json();
+    showStatus('✓ Готово! Футаж #' + data.id, 'success');
+    selectedFile = null; fileInput.value = '';
+    document.getElementById('f-title').value = '';
+    document.getElementById('f-source').value = '';
+    document.getElementById('file-preview').style.display = 'none';
+    tags = []; renderTags();
+    loadFootage(); loadStats();
+  } catch (e) {
+    showStatus('Ошибка: ' + e.message, 'error');
+  } finally {
+    document.getElementById('upload-btn').disabled = false;
+  }
+});
+
+// ==== Manage ====
+async function loadFootage() {
+  allFootage = await fetch(`${API}/api/footage`).then(r => r.json());
+  renderManageTable();
+}
+
+function renderManageTable() {
+  const q = document.getElementById('manage-search').value.toLowerCase();
+  const filtered = q
+    ? allFootage.filter(i => i.title.toLowerCase().includes(q) ||
+        (i.tags || []).some(t => t.includes(q)))
+    : allFootage;
+  document.getElementById('manage-tbody').innerHTML = filtered.map(i => {
+    const uploader = i.uploader
+      ? (i.uploader.username ? '@' + i.uploader.username : i.uploader.name)
+      : 'админ';
+    return `
+      <tr>
+        <td>${i.preview_url ? `<img src="${i.preview_url}" />` : ''}</td>
+        <td>${escapeHtml(i.title)}</td>
+        <td>${i.category_name || '-'}</td>
+        <td>${escapeHtml(uploader)}</td>
+        <td>${i.downloads || 0}</td>
+        <td><button class="danger" data-del-f="${i.id}">Удалить</button></td>
+      </tr>
+    `;
+  }).join('');
+  document.querySelectorAll('[data-del-f]').forEach(b => {
+    b.addEventListener('click', async () => {
+      if (!confirm('Удалить футаж? Файлы будут стёрты из R2.')) return;
+      await fetch(`${API}/api/admin/footage/${b.dataset.delF}`, {
+        method: 'DELETE', headers: { 'x-admin-token': token }
+      });
+      loadFootage(); loadStats();
+    });
+  });
+}
+
+document.getElementById('manage-search').addEventListener('input', renderManageTable);
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>MellMem</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #0f0f10);
+    --bg2: var(--tg-theme-secondary-bg-color, #1a1a1c);
+    --text: var(--tg-theme-text-color, #ffffff);
+    --hint: var(--tg-theme-hint-color, #8a8a8e);
+    --accent: var(--tg-theme-button-color, #ff3b3b);
+    --accent-text: var(--tg-theme-button-text-color, #ffffff);
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 15px; -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain;
+  }
+  body { padding: 0 0 72px; min-height: 100vh; }
+
+  .header {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg);
+    border-bottom: 0.5px solid var(--border);
+    padding: 12px 16px 10px;
+  }
+  .header h1 { font-size: 17px; font-weight: 600; margin-bottom: 2px; }
+  .header .sub { font-size: 12px; color: var(--hint); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ========== BOTTOM NAV ========== */
+  .nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    background: var(--bg);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    padding: 8px 0 calc(env(safe-area-inset-bottom) + 8px);
+  }
+  .nav-btn {
+    flex: 1; background: transparent; border: none;
+    color: var(--hint); font-size: 11px;
+    padding: 6px 4px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .nav-btn .ico { font-size: 20px; }
+  .nav-btn.active { color: var(--accent); }
+
+  /* ========== CATALOG ========== */
+  .search-wrap { padding: 10px 16px 0; }
+  .search-wrap input {
+    width: 100%; padding: 10px 14px;
+    background: var(--bg2); border: none; border-radius: 10px;
+    color: var(--text); font-size: 15px; outline: none;
+  }
+  .search-wrap input::placeholder { color: var(--hint); }
+
+  .chips {
+    padding: 12px 16px 6px;
+    display: flex; gap: 6px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0; padding: 7px 14px;
+    background: var(--bg2); border: none; border-radius: 999px;
+    color: var(--hint); font-size: 13px; white-space: nowrap; cursor: pointer;
+  }
+  .chip.active { background: var(--accent); color: var(--accent-text); }
+
+  .grid {
+    padding: 12px 12px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+  }
+  .card {
+    background: var(--bg2); border-radius: 12px;
+    overflow: hidden; cursor: pointer; transition: transform 0.1s;
+  }
+  .card:active { transform: scale(0.97); }
+  .preview {
+    aspect-ratio: 9/16; background: #000; position: relative; overflow: hidden;
+  }
+  .preview img { width: 100%; height: 100%; object-fit: cover; }
+  .duration {
+    position: absolute; bottom: 6px; right: 6px;
+    background: rgba(0,0,0,0.7); color: #fff;
+    font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 500;
+  }
+  .meta { padding: 8px 10px 10px; }
+  .title {
+    font-size: 13px; font-weight: 500; line-height: 1.3; margin-bottom: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .uploader-line {
+    font-size: 11px; color: var(--hint); margin-bottom: 6px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .stats {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: var(--hint);
+  }
+  .dl-btn {
+    background: var(--accent); color: var(--accent-text);
+    border: none; font-size: 11px; font-weight: 600;
+    padding: 4px 10px; border-radius: 6px; cursor: pointer;
+  }
+  .empty, .loader {
+    grid-column: 1 / -1; text-align: center;
+    padding: 60px 20px; color: var(--hint); font-size: 14px;
+  }
+
+  /* ========== MODAL ========== */
+  .modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+    z-index: 100; display: none; flex-direction: column;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .modal.open { display: flex; }
+  .modal-close {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 12px); right: 16px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); border: none;
+    color: #fff; font-size: 18px; cursor: pointer; z-index: 2;
+  }
+  .modal-video {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 20px; min-height: 0;
+  }
+  .modal-video video { max-width: 100%; max-height: 100%; border-radius: 12px; }
+  .modal-info { padding: 16px 20px; background: var(--bg); }
+  .modal-info h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 14px; }
+  .tag {
+    font-size: 12px; padding: 4px 10px;
+    background: var(--bg2); color: var(--hint); border-radius: 999px;
+  }
+  .modal-actions { display: flex; gap: 8px; }
+  .btn-primary {
+    flex: 1; padding: 13px;
+    background: var(--accent); color: var(--accent-text);
+    border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .btn-secondary {
+    padding: 13px 16px; background: var(--bg2); color: var(--text);
+    border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 500; cursor: pointer;
+  }
+
+  /* ========== UPLOAD TAB ========== */
+  .upload-wrap { padding: 16px; }
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px; padding: 32px 20px; text-align: center;
+    cursor: pointer; margin-bottom: 16px;
+  }
+  .drop-zone.filled { border-style: solid; padding: 12px; }
+  .drop-zone input { display: none; }
+  .drop-zone .hint { font-size: 13px; color: var(--hint); margin-top: 6px; }
+  .drop-zone video {
+    width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain;
+    background: #000;
+  }
+
+  label {
+    display: block; font-size: 13px; color: var(--hint);
+    margin: 12px 0 6px;
+  }
+  input[type="text"], select, textarea {
+    width: 100%; padding: 10px 12px;
+    background: var(--bg2); border: none; border-radius: 8px;
+    color: var(--text); font-size: 14px; outline: none;
+  }
+  .tag-field {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    padding: 8px; background: var(--bg2); border-radius: 8px;
+  }
+  .tag-item {
+    background: rgba(255,255,255,0.1); padding: 4px 10px;
+    border-radius: 999px; font-size: 12px;
+    display: flex; gap: 6px; align-items: center;
+  }
+  .tag-item .x { cursor: pointer; color: var(--hint); }
+  .tag-field input {
+    border: none; background: transparent; padding: 4px;
+    flex: 1; min-width: 100px;
+  }
+  .upload-btn {
+    width: 100%; margin-top: 20px; padding: 14px;
+    background: var(--accent); color: var(--accent-text);
+    border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .upload-note {
+    background: var(--bg2); padding: 12px;
+    border-radius: 8px; font-size: 12px; color: var(--hint);
+    margin-top: 12px; line-height: 1.5;
+  }
+
+  /* ========== LEADERBOARD ========== */
+  .lb-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .lb-rank {
+    font-size: 16px; font-weight: 600; width: 28px;
+    color: var(--hint); text-align: center;
+  }
+  .lb-rank.top1 { color: #ffd700; }
+  .lb-rank.top2 { color: #c0c0c0; }
+  .lb-rank.top3 { color: #cd7f32; }
+  .avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--bg2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; overflow: hidden;
+    flex-shrink: 0;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .lb-info { flex: 1; min-width: 0; }
+  .lb-name {
+    font-size: 14px; font-weight: 500;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .lb-stat { font-size: 12px; color: var(--hint); }
+  .lb-dl {
+    font-size: 14px; font-weight: 600; color: var(--accent);
+  }
+
+  /* ========== PROFILE ========== */
+  .profile-head {
+    text-align: center; padding: 24px 16px 16px;
+  }
+  .profile-head .avatar {
+    width: 72px; height: 72px; font-size: 24px;
+    margin: 0 auto 10px;
+  }
+  .profile-stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    padding: 0 16px 16px;
+  }
+  .stat-card {
+    background: var(--bg2); border-radius: 10px;
+    padding: 12px; text-align: center;
+  }
+  .stat-card .n { font-size: 20px; font-weight: 600; }
+  .stat-card .l { font-size: 11px; color: var(--hint); margin-top: 2px; }
+  .section-title {
+    padding: 16px 16px 8px;
+    font-size: 13px; color: var(--hint);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .my-footage-item {
+    display: flex; gap: 10px; padding: 10px 16px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .my-footage-item img {
+    width: 54px; height: 80px; object-fit: cover; border-radius: 6px;
+    background: #000;
+  }
+  .my-footage-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+  .my-footage-info .t { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+  .my-footage-info .s { font-size: 11px; color: var(--hint); }
+  .status-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+  }
+  .status-badge.pending { background: rgba(255,200,0,0.2); color: #ffcc33; }
+  .status-badge.approved { background: rgba(0,200,83,0.2); color: #4caf50; }
+  .status-badge.rejected { background: rgba(255,0,0,0.2); color: #ff5555; }
+
+  /* ========== TOAST ========== */
+  .toast {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom) + 80px);
+    left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.9); color: #fff;
+    padding: 10px 18px; border-radius: 999px;
+    font-size: 13px; z-index: 200;
+    opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    max-width: 85vw; text-align: center;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1 id="page-title">MellMem</h1>
+  <div class="sub" id="sub-line">Загружаем…</div>
+</div>
+
+<!-- CATALOG TAB -->
+<div class="tab-content active" id="tab-catalog">
+  <div class="search-wrap">
+    <input type="text" id="search" placeholder="Поиск: орёл, казино, крик…" />
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="grid" id="grid">
+    <div class="loader">Загружаем футажи…</div>
+  </div>
+</div>
+
+<!-- UPLOAD TAB -->
+<div class="tab-content" id="tab-upload">
+  <div class="upload-wrap">
+    <label>Видео файл (MP4, до 30 MB, до 60 сек)</label>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" id="file-input" accept="video/mp4,video/quicktime" />
+      <div id="drop-placeholder">
+        <div style="font-size: 15px;">📹 Нажми чтобы выбрать</div>
+        <div class="hint">Лучше вертикальное 9:16, 5–15 сек</div>
+      </div>
+      <div id="file-preview" style="display:none;"></div>
+    </div>
+
+    <label>Название</label>
+    <input type="text" id="f-title" placeholder="Например: ОРЁЛ!!!" />
+
+    <label>Категория</label>
+    <select id="f-category"></select>
+
+    <label>Теги (Enter для добавления)</label>
+    <div class="tag-field" id="tags-wrap">
+      <input type="text" id="tag-input" placeholder="добавить тег..." />
+    </div>
+
+    <label>Ссылка на оригинал (опционально)</label>
+    <input type="text" id="f-source" placeholder="https://youtube.com/..." />
+
+    <button class="upload-btn" id="upload-btn">Отправить на модерацию</button>
+
+    <div class="upload-note">
+      ⚠️ Футажи проходят модерацию. Не загружай NSFW, рекламу или чужой контент без разрешения — за это бан.<br><br>
+      ✓ Твоё имя автоматически подписывается к футажу. Каждое скачивание → +1 в твой рейтинг.
+    </div>
+  </div>
+</div>
+
+<!-- LEADERBOARD TAB -->
+<div class="tab-content" id="tab-leaderboard">
+  <div id="lb-list">
+    <div class="loader">Загружаем рейтинг…</div>
+  </div>
+</div>
+
+<!-- PROFILE TAB -->
+<div class="tab-content" id="tab-profile">
+  <div id="profile-content">
+    <div class="loader">Загружаем профиль…</div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <button class="modal-close" id="modal-close">✕</button>
+  <div class="modal-video" id="modal-video"></div>
+  <div class="modal-info">
+    <h2 id="modal-title"></h2>
+    <div style="font-size: 13px; color: var(--hint);" id="modal-stats"></div>
+    <div class="tags" id="modal-tags"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" id="btn-download">Скачать MP4</button>
+      <button class="btn-secondary" id="btn-share">Поделиться</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- BOTTOM NAV -->
+<div class="nav">
+  <button class="nav-btn active" data-tab="catalog">
+    <span class="ico">▦</span><span>Каталог</span>
+  </button>
+  <button class="nav-btn" data-tab="upload">
+    <span class="ico">+</span><span>Загрузить</span>
+  </button>
+  <button class="nav-btn" data-tab="leaderboard">
+    <span class="ico">★</span><span>Рейтинг</span>
+  </button>
+  <button class="nav-btn" data-tab="profile">
+    <span class="ico">◉</span><span>Профиль</span>
+  </button>
+</div>
+
+<script>
+const API = window.location.origin;
+const tg = window.Telegram?.WebApp;
+const initData = tg?.initData || '';
+
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('#0f0f10');
+  tg.setBackgroundColor('#0f0f10');
+}
+
+const state = {
+  items: [], categories: [],
+  activeCategory: 'all', query: '',
+  currentItem: null, activeTab: 'catalog',
+  selectedFile: null, userTags: []
+};
+
+const $ = id => document.getElementById(id);
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function haptic(type = 'light') { tg?.HapticFeedback?.impactOccurred(type); }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function formatNumber(n) {
+  if (n >= 1000) return (n / 1000).toFixed(1).replace('.0','') + 'k';
+  return n.toString();
+}
+function formatDuration(s) {
+  const m = Math.floor(s / 60); const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
+}
+
+// ========== TAB SWITCHING ==========
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+function switchTab(tab) {
+  state.activeTab = tab;
+  haptic('light');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${tab}`));
+  const titles = { catalog: 'MellMem', upload: 'Загрузить футаж', leaderboard: 'Рейтинг', profile: 'Мой профиль' };
+  $('page-title').textContent = titles[tab];
+  $('sub-line').style.display = tab === 'catalog' ? 'block' : 'none';
+
+  if (tab === 'leaderboard') loadLeaderboard();
+  if (tab === 'profile') loadProfile();
+  if (tab === 'upload') loadCategoriesIntoSelect();
+}
+
+// ========== CATALOG ==========
+async function loadData() {
+  try {
+    const [i, c] = await Promise.all([
+      fetch(`${API}/api/footage`).then(r => r.json()),
+      fetch(`${API}/api/categories`).then(r => r.json())
+    ]);
+    state.items = i; state.categories = c;
+    renderChips(); renderGrid();
+  } catch (e) {
+    $('grid').innerHTML = `<div class="empty">Ошибка загрузки. Попробуйте позже.</div>`;
+  }
+}
+
+function renderChips() {
+  const html = [
+    `<button class="chip active" data-cat="all">Все</button>`,
+    ...state.categories.map(c => `<button class="chip" data-cat="${c.slug}">${escapeHtml(c.name)}</button>`)
+  ].join('');
+  $('chips').innerHTML = html;
+  $('chips').querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      $('chips').querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      state.activeCategory = chip.dataset.cat;
+      haptic('light'); renderGrid();
+    });
+  });
+}
+
+function renderGrid() {
+  const q = state.query.toLowerCase().trim();
+  const filtered = state.items.filter(item => {
+    const catOk = state.activeCategory === 'all' || item.category_slug === state.activeCategory;
+    const qOk = !q || item.title.toLowerCase().includes(q) ||
+                (item.tags || []).some(t => t.toLowerCase().includes(q));
+    return catOk && qOk;
+  });
+
+  $('sub-line').textContent = `${state.items.length} нарезок · ${state.categories.length} категорий`;
+
+  if (!filtered.length) {
+    $('grid').innerHTML = `<div class="empty">Ничего не нашлось.<br>Попробуйте другой запрос.</div>`;
+    return;
+  }
+
+  $('grid').innerHTML = filtered.map(item => {
+    const uploader = item.uploader
+      ? `@${item.uploader.username || item.uploader.name || 'anon'}`
+      : 'админ';
+    return `
+    <div class="card" data-id="${item.id}">
+      <div class="preview">
+        ${item.preview_url ? `<img src="${item.preview_url}" loading="lazy" />` : ''}
+        ${item.duration ? `<div class="duration">${formatDuration(item.duration)}</div>` : ''}
+      </div>
+      <div class="meta">
+        <div class="title">${escapeHtml(item.title)}</div>
+        <div class="uploader-line">✎ ${escapeHtml(uploader)}</div>
+        <div class="stats">
+          <span>↓ ${formatNumber(item.downloads || 0)}</span>
+          <button class="dl-btn" data-id="${item.id}" data-action="download">MP4</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  $('grid').querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.dataset.action === 'download') {
+        e.stopPropagation();
+        downloadItem(parseInt(e.target.dataset.id));
+        return;
+      }
+      openModal(parseInt(card.dataset.id));
+    });
+  });
+}
+
+function openModal(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  state.currentItem = item;
+  haptic('medium');
+  $('modal-title').textContent = item.title;
+  const uploaderStr = item.uploader
+    ? `✎ @${item.uploader.username || item.uploader.name || 'anon'}`
+    : '✎ админ';
+  $('modal-stats').textContent =
+    `${uploaderStr} · ${formatNumber(item.downloads || 0)} ↓${item.duration ? ' · ' + formatDuration(item.duration) : ''}`;
+  $('modal-tags').innerHTML = (item.tags || []).map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('');
+  $('modal-video').innerHTML = `<video src="${item.video_url}" controls autoplay playsinline loop></video>`;
+  $('modal').classList.add('open');
+}
+
+function closeModal() {
+  $('modal').classList.remove('open');
+  $('modal-video').innerHTML = '';
+  state.currentItem = null;
+}
+
+async function downloadItem(id) {
+  haptic('medium');
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  try {
+    const res = await fetch(`${API}/api/download/${id}`, {
+      method: 'POST',
+      headers: { 'x-tg-init-data': initData }
+    });
+    const data = await res.json();
+    item.downloads = data.downloads;
+    renderGrid();
+    if (tg?.downloadFile) {
+      tg.downloadFile({ url: data.url, file_name: data.filename }, ok => {
+        if (ok) toast('Сохранено!');
+      });
+    } else {
+      const a = document.createElement('a');
+      a.href = data.url; a.download = data.filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      toast('Скачивание началось');
+    }
+  } catch (e) {
+    toast('Ошибка скачивания');
+  }
+}
+
+$('modal-close').addEventListener('click', closeModal);
+$('btn-download').addEventListener('click', () => {
+  if (state.currentItem) downloadItem(state.currentItem.id);
+});
+$('btn-share').addEventListener('click', () => {
+  if (!state.currentItem || !tg) return;
+  const url = `https://t.me/share/url?url=${encodeURIComponent(state.currentItem.video_url)}&text=${encodeURIComponent(state.currentItem.title)}`;
+  tg.openTelegramLink(url);
+});
+$('search').addEventListener('input', e => {
+  state.query = e.target.value;
+  renderGrid();
+});
+
+// ========== UPLOAD ==========
+async function loadCategoriesIntoSelect() {
+  if (!state.categories.length) {
+    state.categories = await fetch(`${API}/api/categories`).then(r => r.json());
+  }
+  $('f-category').innerHTML = state.categories.map(c =>
+    `<option value="${c.slug}">${escapeHtml(c.name)}</option>`
+  ).join('');
+}
+
+const dropZone = $('drop-zone');
+const fileInput = $('file-input');
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+function handleFile(f) {
+  if (f.size > 30 * 1024 * 1024) {
+    toast('Файл больше 30 MB');
+    return;
+  }
+  state.selectedFile = f;
+  const url = URL.createObjectURL(f);
+  $('drop-placeholder').style.display = 'none';
+  $('file-preview').style.display = 'block';
+  $('file-preview').innerHTML = `
+    <video src="${url}" muted controls></video>
+    <div style="font-size: 12px; color: var(--hint); margin-top: 6px;">
+      ${escapeHtml(f.name)} · ${(f.size/1024/1024).toFixed(1)} MB
+    </div>
+  `;
+  dropZone.classList.add('filled');
+  if (!$('f-title').value) {
+    $('f-title').value = f.name.replace(/\.[^.]+$/, '').slice(0, 60);
+  }
+}
+
+const tagInput = $('tag-input');
+tagInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const t = tagInput.value.trim().toLowerCase();
+    if (t && !state.userTags.includes(t) && state.userTags.length < 10) {
+      state.userTags.push(t);
+      renderUserTags();
+    }
+    tagInput.value = '';
+  } else if (e.key === 'Backspace' && !tagInput.value && state.userTags.length) {
+    state.userTags.pop();
+    renderUserTags();
+  }
+});
+
+function renderUserTags() {
+  $('tags-wrap').querySelectorAll('.tag-item').forEach(el => el.remove());
+  state.userTags.forEach(t => {
+    const el = document.createElement('span');
+    el.className = 'tag-item';
+    el.innerHTML = `${escapeHtml(t)}<span class="x">×</span>`;
+    el.querySelector('.x').addEventListener('click', () => {
+      state.userTags = state.userTags.filter(x => x !== t);
+      renderUserTags();
+    });
+    $('tags-wrap').insertBefore(el, tagInput);
+  });
+}
+
+$('upload-btn').addEventListener('click', async () => {
+  if (!initData) {
+    toast('Открой через Telegram бота');
+    return;
+  }
+  if (!state.selectedFile) { toast('Выбери файл'); return; }
+  if (!$('f-title').value.trim()) { toast('Укажи название'); return; }
+
+  const fd = new FormData();
+  fd.append('video', state.selectedFile);
+  fd.append('title', $('f-title').value.trim());
+  fd.append('category_slug', $('f-category').value);
+  fd.append('tags', JSON.stringify(state.userTags));
+  fd.append('source_url', $('f-source').value.trim());
+
+  $('upload-btn').disabled = true;
+  $('upload-btn').textContent = 'Загружаем…';
+
+  try {
+    const res = await fetch(`${API}/api/user/upload`, {
+      method: 'POST',
+      headers: { 'x-tg-init-data': initData },
+      body: fd
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'upload failed');
+
+    toast(data.message || 'Отправлено!');
+    state.selectedFile = null;
+    state.userTags = [];
+    $('f-title').value = '';
+    $('f-source').value = '';
+    fileInput.value = '';
+    $('file-preview').style.display = 'none';
+    $('drop-placeholder').style.display = 'block';
+    dropZone.classList.remove('filled');
+    renderUserTags();
+  } catch (e) {
+    toast('Ошибка: ' + e.message);
+  } finally {
+    $('upload-btn').disabled = false;
+    $('upload-btn').textContent = 'Отправить на модерацию';
+  }
+});
+
+// ========== LEADERBOARD ==========
+async function loadLeaderboard() {
+  try {
+    const list = await fetch(`${API}/api/leaderboard`).then(r => r.json());
+    if (!list.length) {
+      $('lb-list').innerHTML = `<div class="empty">Пока никто не загружал футажи.<br>Будь первым!</div>`;
+      return;
+    }
+    $('lb-list').innerHTML = list.map((u, i) => {
+      const rank = i + 1;
+      const rankClass = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
+      const name = u.username ? '@' + u.username : (u.first_name || 'anon');
+      const initial = (u.first_name || u.username || '?')[0].toUpperCase();
+      return `
+        <div class="lb-item">
+          <div class="lb-rank ${rankClass}">${rank}</div>
+          <div class="avatar">
+            ${u.photo_url ? `<img src="${u.photo_url}">` : escapeHtml(initial)}
+          </div>
+          <div class="lb-info">
+            <div class="lb-name">${escapeHtml(name)}</div>
+            <div class="lb-stat">${u.uploads_count} футажей</div>
+          </div>
+          <div class="lb-dl">↓ ${formatNumber(u.total_downloads)}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    $('lb-list').innerHTML = `<div class="empty">Ошибка загрузки</div>`;
+  }
+}
+
+// ========== PROFILE ==========
+async function loadProfile() {
+  if (!initData) {
+    $('profile-content').innerHTML = `
+      <div class="empty" style="padding: 80px 20px;">
+        Открой миниап через Telegram-бота<br>
+        чтобы увидеть профиль
+      </div>
+    `;
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/api/user/me`, {
+      headers: { 'x-tg-init-data': initData }
+    });
+    if (!res.ok) throw new Error('auth failed');
+    const { user, footage } = await res.json();
+    const name = user.username ? '@' + user.username : (user.first_name || 'User');
+    const initial = (user.first_name || user.username || '?')[0].toUpperCase();
+
+    let html = `
+      <div class="profile-head">
+        <div class="avatar">
+          ${user.photo_url ? `<img src="${user.photo_url}">` : escapeHtml(initial)}
+        </div>
+        <div style="font-size: 17px; font-weight: 600;">${escapeHtml(name)}</div>
+      </div>
+      <div class="profile-stats">
+        <div class="stat-card">
+          <div class="n">${user.uploads_count || 0}</div>
+          <div class="l">Загружено</div>
+        </div>
+        <div class="stat-card">
+          <div class="n">${formatNumber(user.total_downloads_received || 0)}</div>
+          <div class="l">Скачиваний</div>
+        </div>
+      </div>
+    `;
+
+    if (footage.length) {
+      html += `<div class="section-title">Мои футажи</div>`;
+      html += footage.map(f => {
+        const statusText = { pending: 'На модерации', approved: 'Одобрено', rejected: 'Отклонено' }[f.status] || f.status;
+        return `
+          <div class="my-footage-item">
+            ${f.preview_url ? `<img src="${f.preview_url}">` : `<div style="width:54px;height:80px;background:var(--bg2);border-radius:6px;"></div>`}
+            <div class="my-footage-info">
+              <div class="t">${escapeHtml(f.title)}</div>
+              <div class="s">
+                <span class="status-badge ${f.status}">${statusText}</span>
+                ${f.status === 'approved' ? ` · ↓ ${f.downloads}` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      html += `<div class="empty" style="padding: 40px 20px;">Ты ещё ничего не загружал</div>`;
+    }
+    $('profile-content').innerHTML = html;
+  } catch (e) {
+    $('profile-content').innerHTML = `<div class="empty">Ошибка загрузки профиля</div>`;
+  }
+}
+
+loadData();
+</script>
+
+</body>
+</html>

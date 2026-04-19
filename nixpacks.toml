@@ -1,0 +1,8 @@
+[phases.setup]
+aptPkgs = ["...", "ffmpeg"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[start]
+cmd = "node server/server.js"
