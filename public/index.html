@@ -7,190 +7,326 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
-    --bg: var(--tg-theme-bg-color, #0f0f10);
-    --bg2: var(--tg-theme-secondary-bg-color, #1a1a1c);
-    --text: var(--tg-theme-text-color, #ffffff);
-    --hint: var(--tg-theme-hint-color, #8a8a8e);
-    --accent: var(--tg-theme-button-color, #ff3b3b);
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --bg2: var(--tg-theme-secondary-bg-color, #f2f2f7);
+    --bg3: #ffffff;
+    --text: var(--tg-theme-text-color, #000000);
+    --hint: var(--tg-theme-hint-color, #8e8e93);
+    --accent: var(--tg-theme-button-color, #007aff);
     --accent-text: var(--tg-theme-button-text-color, #ffffff);
-    --border: rgba(255,255,255,0.08);
+    --danger: #ff3b30;
+    --border: rgba(60, 60, 67, 0.1);
+    --border-strong: rgba(60, 60, 67, 0.18);
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg3: #1c1c1e;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body {
     background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
     font-size: 15px; -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: contain;
   }
-  body { padding: 0 0 72px; min-height: 100vh; }
+  body { padding: 0 0 68px; min-height: 100vh; }
 
+  /* ========== HEADER ========== */
   .header {
     position: sticky; top: 0; z-index: 10;
-    background: var(--bg);
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 0.5px solid var(--border);
-    padding: 12px 16px 10px;
+    padding: 10px 16px 8px;
   }
-  .header h1 { font-size: 17px; font-weight: 600; margin-bottom: 2px; }
-  .header .sub { font-size: 12px; color: var(--hint); }
-
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-
-  /* ========== BOTTOM NAV ========== */
-  .nav {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-    background: var(--bg);
-    border-top: 0.5px solid var(--border);
-    display: flex;
-    padding: 8px 0 calc(env(safe-area-inset-bottom) + 8px);
+  @media (prefers-color-scheme: dark) {
+    .header { background: rgba(0,0,0,0.7); }
   }
-  .nav-btn {
-    flex: 1; background: transparent; border: none;
-    color: var(--hint); font-size: 11px;
-    padding: 6px 4px; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  .header h1 {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.3px;
+    margin-bottom: 2px;
   }
-  .nav-btn .ico { font-size: 20px; }
-  .nav-btn.active { color: var(--accent); }
+  .header .sub { font-size: 13px; color: var(--hint); }
 
-  /* ========== CATALOG ========== */
-  .search-wrap { padding: 10px 16px 0; }
+  /* ========== SEARCH ========== */
+  .search-wrap { padding: 10px 16px 4px; }
   .search-wrap input {
-    width: 100%; padding: 10px 14px;
+    width: 100%; padding: 9px 14px;
     background: var(--bg2); border: none; border-radius: 10px;
     color: var(--text); font-size: 15px; outline: none;
+    -webkit-appearance: none;
   }
   .search-wrap input::placeholder { color: var(--hint); }
 
+  /* ========== SORT TABS ========== */
+  .sort-tabs {
+    padding: 8px 16px 0;
+    display: flex; gap: 4px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .sort-tab {
+    flex: 1; background: transparent; border: none;
+    padding: 8px 4px 10px; cursor: pointer;
+    color: var(--hint); font-size: 14px; font-weight: 500;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+  }
+  .sort-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ========== CHIPS ========== */
   .chips {
-    padding: 12px 16px 6px;
+    padding: 10px 16px 8px;
     display: flex; gap: 6px;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
   .chips::-webkit-scrollbar { display: none; }
   .chip {
-    flex-shrink: 0; padding: 7px 14px;
+    flex-shrink: 0; padding: 6px 12px;
     background: var(--bg2); border: none; border-radius: 999px;
-    color: var(--hint); font-size: 13px; white-space: nowrap; cursor: pointer;
+    color: var(--text); font-size: 13px; font-weight: 500;
+    white-space: nowrap; cursor: pointer;
   }
   .chip.active { background: var(--accent); color: var(--accent-text); }
 
+  /* ========== GRID 3-col ========== */
   .grid {
-    padding: 12px 12px;
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+    padding: 6px 8px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
   }
   .card {
-    background: var(--bg2); border-radius: 12px;
-    overflow: hidden; cursor: pointer; transition: transform 0.1s;
+    position: relative;
+    background: var(--bg2);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    aspect-ratio: 9/16;
+    transition: transform 0.1s;
   }
-  .card:active { transform: scale(0.97); }
-  .preview {
-    aspect-ratio: 9/16; background: #000; position: relative; overflow: hidden;
+  .card:active { transform: scale(0.95); }
+  .card img {
+    width: 100%; height: 100%; object-fit: cover;
+    display: block;
   }
-  .preview img { width: 100%; height: 100%; object-fit: cover; }
-  .duration {
-    position: absolute; bottom: 6px; right: 6px;
-    background: rgba(0,0,0,0.7); color: #fff;
-    font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 500;
+  .card .overlay-top {
+    position: absolute; top: 6px; left: 6px; right: 6px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    pointer-events: none;
   }
-  .meta { padding: 8px 10px 10px; }
-  .title {
-    font-size: 13px; font-weight: 500; line-height: 1.3; margin-bottom: 4px;
+  .card .duration {
+    background: rgba(0,0,0,0.6); color: #fff;
+    font-size: 10px; padding: 2px 5px; border-radius: 4px;
+    font-weight: 600; letter-spacing: 0.3px;
+    backdrop-filter: blur(4px);
+  }
+  .card .fav-icon {
+    width: 20px; height: 20px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+    font-size: 11px;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .card .fav-icon.on { background: var(--danger); }
+  .card .overlay-bottom {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 14px 7px 5px;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    color: #fff;
+    pointer-events: none;
+  }
+  .card .title {
+    font-size: 11px; font-weight: 600; line-height: 1.25;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     overflow: hidden;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
-  .uploader-line {
-    font-size: 11px; color: var(--hint); margin-bottom: 6px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  .card .stats {
+    display: flex; gap: 8px; margin-top: 3px;
+    font-size: 10px; opacity: 0.9; font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
-  .stats {
-    display: flex; align-items: center; justify-content: space-between;
-    font-size: 11px; color: var(--hint);
-  }
-  .dl-btn {
-    background: var(--accent); color: var(--accent-text);
-    border: none; font-size: 11px; font-weight: 600;
-    padding: 4px 10px; border-radius: 6px; cursor: pointer;
-  }
+
   .empty, .loader {
     grid-column: 1 / -1; text-align: center;
     padding: 60px 20px; color: var(--hint); font-size: 14px;
   }
 
-  /* ========== MODAL ========== */
-  .modal {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.92);
-    z-index: 100; display: none; flex-direction: column;
-    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  /* ========== SWIPE PLAYER (TikTok) ========== */
+  .player {
+    position: fixed; inset: 0;
+    background: #000;
+    z-index: 100; display: none;
+    overflow: hidden;
   }
-  .modal.open { display: flex; }
-  .modal-close {
+  .player.open { display: block; }
+  .player-slides {
+    position: absolute; inset: 0;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .player-slides::-webkit-scrollbar { display: none; }
+  .player-slide {
+    height: 100%;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .player-slide video {
+    width: 100%; height: 100%; object-fit: contain;
+    background: #000;
+  }
+  .player-slide .sl-info {
+    position: absolute; bottom: 0; left: 0; right: 80px;
+    padding: 20px 16px calc(env(safe-area-inset-bottom) + 16px);
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    color: #fff;
+  }
+  .player-slide .sl-title {
+    font-size: 18px; font-weight: 700; margin-bottom: 6px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
+  .player-slide .sl-uploader {
+    font-size: 13px; opacity: 0.9; margin-bottom: 8px;
+  }
+  .player-slide .sl-tags {
+    display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  .player-slide .sl-tag {
+    font-size: 11px; padding: 3px 8px;
+    background: rgba(255,255,255,0.2); border-radius: 999px;
+    backdrop-filter: blur(4px);
+  }
+  .player-slide .sl-actions {
     position: absolute;
-    top: calc(env(safe-area-inset-top) + 12px); right: 16px;
-    width: 36px; height: 36px; border-radius: 50%;
-    background: rgba(255,255,255,0.15); border: none;
-    color: #fff; font-size: 18px; cursor: pointer; z-index: 2;
+    right: 12px;
+    bottom: calc(env(safe-area-inset-bottom) + 24px);
+    display: flex; flex-direction: column; gap: 16px;
+    align-items: center;
   }
-  .modal-video {
-    flex: 1; display: flex; align-items: center; justify-content: center;
-    padding: 20px; min-height: 0;
+  .sl-btn {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    border: none; color: #fff; cursor: pointer;
+    font-size: 20px;
   }
-  .modal-video video { max-width: 100%; max-height: 100%; border-radius: 12px; }
-  .modal-info { padding: 16px 20px; background: var(--bg); }
-  .modal-info h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
-  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 14px; }
-  .tag {
-    font-size: 12px; padding: 4px 10px;
-    background: var(--bg2); color: var(--hint); border-radius: 999px;
+  .sl-btn.heart.on { background: var(--danger); }
+  .sl-btn.download { background: var(--accent); }
+  .sl-btn-label {
+    font-size: 11px; color: #fff; font-weight: 600;
+    margin-top: -10px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
   }
-  .modal-actions { display: flex; gap: 8px; }
-  .btn-primary {
-    flex: 1; padding: 13px;
-    background: var(--accent); color: var(--accent-text);
-    border: none; border-radius: 10px;
-    font-size: 15px; font-weight: 600; cursor: pointer;
+  .player-close {
+    position: absolute;
+    top: calc(env(safe-area-inset-top) + 12px);
+    left: 12px;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    border: none; color: #fff; font-size: 18px; cursor: pointer;
+    z-index: 2;
+    display: flex; align-items: center; justify-content: center;
   }
-  .btn-secondary {
-    padding: 13px 16px; background: var(--bg2); color: var(--text);
-    border: none; border-radius: 10px;
-    font-size: 15px; font-weight: 500; cursor: pointer;
+  .player-hint {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.7);
+    color: #fff; font-size: 14px;
+    padding: 10px 18px; border-radius: 999px;
+    backdrop-filter: blur(10px);
+    pointer-events: none;
+    opacity: 0; transition: opacity 0.3s;
   }
+  .player-hint.show { opacity: 1; }
+
+  /* ========== BOTTOM NAV ========== */
+  .nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    padding: 6px 0 calc(env(safe-area-inset-bottom) + 4px);
+  }
+  @media (prefers-color-scheme: dark) {
+    .nav { background: rgba(0,0,0,0.7); }
+  }
+  .nav-btn {
+    flex: 1; background: transparent; border: none;
+    color: var(--hint); font-size: 10px; font-weight: 500;
+    padding: 4px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .nav-btn svg { width: 24px; height: 24px; }
+  .nav-btn.active { color: var(--accent); }
+
+  /* ========== TAB CONTENT ========== */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
 
   /* ========== UPLOAD TAB ========== */
   .upload-wrap { padding: 16px; }
   .drop-zone {
-    border: 2px dashed var(--border);
-    border-radius: 12px; padding: 32px 20px; text-align: center;
+    border: 2px dashed var(--border-strong);
+    border-radius: 14px; padding: 32px 20px; text-align: center;
     cursor: pointer; margin-bottom: 16px;
+    background: var(--bg2);
   }
-  .drop-zone.filled { border-style: solid; padding: 12px; }
+  .drop-zone.filled { border-style: solid; padding: 12px; background: var(--bg3); }
   .drop-zone input { display: none; }
-  .drop-zone .hint { font-size: 13px; color: var(--hint); margin-top: 6px; }
+  .drop-zone .hint { font-size: 13px; color: var(--hint); margin-top: 4px; }
   .drop-zone video {
-    width: 100%; max-height: 200px; border-radius: 8px; object-fit: contain;
+    width: 100%; max-height: 260px; border-radius: 10px; object-fit: contain;
     background: #000;
+  }
+  .drop-zone .fname {
+    font-size: 12px; color: var(--hint); margin-top: 8px;
+    text-align: center;
   }
 
   label {
     display: block; font-size: 13px; color: var(--hint);
-    margin: 12px 0 6px;
+    margin: 14px 0 6px; font-weight: 500;
   }
   input[type="text"], select, textarea {
-    width: 100%; padding: 10px 12px;
-    background: var(--bg2); border: none; border-radius: 8px;
-    color: var(--text); font-size: 14px; outline: none;
+    width: 100%; padding: 11px 14px;
+    background: var(--bg2); border: none; border-radius: 10px;
+    color: var(--text); font-size: 15px; outline: none;
+    -webkit-appearance: none;
+    font-family: inherit;
+  }
+  select {
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path fill='%238e8e93' d='M6 8L2 4h8z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
   }
   .tag-field {
     display: flex; gap: 6px; flex-wrap: wrap;
-    padding: 8px; background: var(--bg2); border-radius: 8px;
+    padding: 8px; background: var(--bg2); border-radius: 10px;
   }
   .tag-item {
-    background: rgba(255,255,255,0.1); padding: 4px 10px;
-    border-radius: 999px; font-size: 12px;
+    background: var(--accent); color: var(--accent-text);
+    padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 500;
     display: flex; gap: 6px; align-items: center;
   }
-  .tag-item .x { cursor: pointer; color: var(--hint); }
+  .tag-item .x { cursor: pointer; opacity: 0.7; }
   .tag-field input {
     border: none; background: transparent; padding: 4px;
     flex: 1; min-width: 100px;
@@ -198,13 +334,13 @@
   .upload-btn {
     width: 100%; margin-top: 20px; padding: 14px;
     background: var(--accent); color: var(--accent-text);
-    border: none; border-radius: 10px;
-    font-size: 15px; font-weight: 600; cursor: pointer;
+    border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 600; cursor: pointer;
   }
-  .upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .upload-btn:disabled { opacity: 0.5; }
   .upload-note {
-    background: var(--bg2); padding: 12px;
-    border-radius: 8px; font-size: 12px; color: var(--hint);
+    background: var(--bg2); padding: 12px 14px;
+    border-radius: 10px; font-size: 12px; color: var(--hint);
     margin-top: 12px; line-height: 1.5;
   }
 
@@ -215,11 +351,11 @@
     border-bottom: 0.5px solid var(--border);
   }
   .lb-rank {
-    font-size: 16px; font-weight: 600; width: 28px;
+    font-size: 15px; font-weight: 700; width: 24px;
     color: var(--hint); text-align: center;
   }
-  .lb-rank.top1 { color: #ffd700; }
-  .lb-rank.top2 { color: #c0c0c0; }
+  .lb-rank.top1 { color: #ffcc00; }
+  .lb-rank.top2 { color: #a2a2a7; }
   .lb-rank.top3 { color: #cd7f32; }
   .avatar {
     width: 40px; height: 40px; border-radius: 50%;
@@ -230,74 +366,73 @@
   }
   .avatar img { width: 100%; height: 100%; object-fit: cover; }
   .lb-info { flex: 1; min-width: 0; }
-  .lb-name {
-    font-size: 14px; font-weight: 500;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .lb-stat { font-size: 12px; color: var(--hint); }
-  .lb-dl {
-    font-size: 14px; font-weight: 600; color: var(--accent);
-  }
+  .lb-name { font-size: 15px; font-weight: 600; }
+  .lb-stat { font-size: 12px; color: var(--hint); margin-top: 1px; }
+  .lb-dl { font-size: 15px; font-weight: 600; color: var(--accent); }
 
   /* ========== PROFILE ========== */
-  .profile-head {
-    text-align: center; padding: 24px 16px 16px;
-  }
+  .profile-head { text-align: center; padding: 24px 16px 14px; }
   .profile-head .avatar {
-    width: 72px; height: 72px; font-size: 24px;
+    width: 80px; height: 80px; font-size: 28px;
     margin: 0 auto 10px;
   }
+  .profile-head .pname { font-size: 18px; font-weight: 700; }
   .profile-stats {
     display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
     padding: 0 16px 16px;
   }
   .stat-card {
-    background: var(--bg2); border-radius: 10px;
-    padding: 12px; text-align: center;
+    background: var(--bg2); border-radius: 12px;
+    padding: 14px; text-align: center;
   }
-  .stat-card .n { font-size: 20px; font-weight: 600; }
-  .stat-card .l { font-size: 11px; color: var(--hint); margin-top: 2px; }
+  .stat-card .n { font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }
+  .stat-card .l { font-size: 12px; color: var(--hint); margin-top: 2px; }
   .section-title {
     padding: 16px 16px 8px;
-    font-size: 13px; color: var(--hint);
+    font-size: 13px; color: var(--hint); font-weight: 600;
     text-transform: uppercase; letter-spacing: 0.5px;
   }
   .my-footage-item {
-    display: flex; gap: 10px; padding: 10px 16px;
+    display: flex; gap: 12px; padding: 10px 16px;
     border-bottom: 0.5px solid var(--border);
   }
   .my-footage-item img {
-    width: 54px; height: 80px; object-fit: cover; border-radius: 6px;
-    background: #000;
+    width: 50px; height: 74px; object-fit: cover; border-radius: 8px;
+    background: var(--bg2);
   }
-  .my-footage-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-  .my-footage-info .t { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
-  .my-footage-info .s { font-size: 11px; color: var(--hint); }
+  .my-footage-info {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .my-footage-info .t { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .my-footage-info .s { font-size: 12px; color: var(--hint); }
   .status-badge {
     display: inline-block; padding: 2px 8px; border-radius: 4px;
-    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
   }
-  .status-badge.pending { background: rgba(255,200,0,0.2); color: #ffcc33; }
-  .status-badge.approved { background: rgba(0,200,83,0.2); color: #4caf50; }
-  .status-badge.rejected { background: rgba(255,0,0,0.2); color: #ff5555; }
+  .status-badge.pending { background: rgba(255,204,0,0.15); color: #ff9500; }
+  .status-badge.approved { background: rgba(52,199,89,0.15); color: #34c759; }
+  .status-badge.rejected { background: rgba(255,59,48,0.15); color: var(--danger); }
 
   /* ========== TOAST ========== */
   .toast {
     position: fixed;
     bottom: calc(env(safe-area-inset-bottom) + 80px);
     left: 50%; transform: translateX(-50%);
-    background: rgba(0,0,0,0.9); color: #fff;
+    background: rgba(0,0,0,0.88); color: #fff;
     padding: 10px 18px; border-radius: 999px;
-    font-size: 13px; z-index: 200;
+    font-size: 13px; font-weight: 500;
+    z-index: 200;
     opacity: 0; transition: opacity 0.2s; pointer-events: none;
     max-width: 85vw; text-align: center;
+    backdrop-filter: blur(10px);
   }
   .toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 
-<div class="header">
+<div class="header" id="header">
   <h1 id="page-title">MellMem</h1>
   <div class="sub" id="sub-line">Загружаем…</div>
 </div>
@@ -307,9 +442,21 @@
   <div class="search-wrap">
     <input type="text" id="search" placeholder="Поиск: орёл, казино, крик…" />
   </div>
+  <div class="sort-tabs">
+    <button class="sort-tab active" data-sort="new">Новые</button>
+    <button class="sort-tab" data-sort="popular">Популярные</button>
+    <button class="sort-tab" data-sort="favorites">Топ по лайкам</button>
+  </div>
   <div class="chips" id="chips"></div>
   <div class="grid" id="grid">
     <div class="loader">Загружаем футажи…</div>
+  </div>
+</div>
+
+<!-- FAVORITES TAB -->
+<div class="tab-content" id="tab-favorites">
+  <div class="grid" id="fav-grid">
+    <div class="loader">Загружаем избранное…</div>
   </div>
 </div>
 
@@ -320,31 +467,25 @@
     <div class="drop-zone" id="drop-zone">
       <input type="file" id="file-input" accept="video/mp4,video/quicktime" />
       <div id="drop-placeholder">
-        <div style="font-size: 15px;">📹 Нажми чтобы выбрать</div>
+        <div style="font-size: 15px; font-weight: 500;">📹 Выбрать файл</div>
         <div class="hint">Лучше вертикальное 9:16, 5–15 сек</div>
       </div>
       <div id="file-preview" style="display:none;"></div>
     </div>
-
     <label>Название</label>
     <input type="text" id="f-title" placeholder="Например: ОРЁЛ!!!" />
-
     <label>Категория</label>
     <select id="f-category"></select>
-
-    <label>Теги (Enter для добавления)</label>
+    <label>Теги (Enter чтобы добавить)</label>
     <div class="tag-field" id="tags-wrap">
       <input type="text" id="tag-input" placeholder="добавить тег..." />
     </div>
-
     <label>Ссылка на оригинал (опционально)</label>
     <input type="text" id="f-source" placeholder="https://youtube.com/..." />
-
     <button class="upload-btn" id="upload-btn">Отправить на модерацию</button>
-
     <div class="upload-note">
-      ⚠️ Футажи проходят модерацию. Не загружай NSFW, рекламу или чужой контент без разрешения — за это бан.<br><br>
-      ✓ Твоё имя автоматически подписывается к футажу. Каждое скачивание → +1 в твой рейтинг.
+      ⚠️ Футажи проходят модерацию. Не загружай NSFW, рекламу или чужой контент без разрешения.<br><br>
+      ✓ Твоё имя подписывается к футажу. Каждое скачивание → +1 в рейтинг.
     </div>
   </div>
 </div>
@@ -363,19 +504,11 @@
   </div>
 </div>
 
-<!-- MODAL -->
-<div class="modal" id="modal">
-  <button class="modal-close" id="modal-close">✕</button>
-  <div class="modal-video" id="modal-video"></div>
-  <div class="modal-info">
-    <h2 id="modal-title"></h2>
-    <div style="font-size: 13px; color: var(--hint);" id="modal-stats"></div>
-    <div class="tags" id="modal-tags"></div>
-    <div class="modal-actions">
-      <button class="btn-primary" id="btn-download">Скачать MP4</button>
-      <button class="btn-secondary" id="btn-share">Поделиться</button>
-    </div>
-  </div>
+<!-- SWIPE PLAYER -->
+<div class="player" id="player">
+  <button class="player-close" id="player-close">✕</button>
+  <div class="player-hint" id="player-hint">Свайп ↑ дальше</div>
+  <div class="player-slides" id="player-slides"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -383,16 +516,39 @@
 <!-- BOTTOM NAV -->
 <div class="nav">
   <button class="nav-btn active" data-tab="catalog">
-    <span class="ico">▦</span><span>Каталог</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+      <rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    <span>Каталог</span>
+  </button>
+  <button class="nav-btn" data-tab="favorites">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 21s-7-4.35-7-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.65-7 11-7 11-1 1-3 1-4 0z" stroke-linejoin="round"/>
+    </svg>
+    <span>Избранное</span>
   </button>
   <button class="nav-btn" data-tab="upload">
-    <span class="ico">+</span><span>Загрузить</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 8v8M8 12h8" stroke-linecap="round"/>
+    </svg>
+    <span>Загрузить</span>
   </button>
   <button class="nav-btn" data-tab="leaderboard">
-    <span class="ico">★</span><span>Рейтинг</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2l2.5 6.5L21 9l-5 5 1.5 7L12 17l-5.5 4L8 14l-5-5 6.5-.5L12 2z" stroke-linejoin="round"/>
+    </svg>
+    <span>Рейтинг</span>
   </button>
   <button class="nav-btn" data-tab="profile">
-    <span class="ico">◉</span><span>Профиль</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 21c0-4.5 3.5-8 8-8s8 3.5 8 8"/>
+    </svg>
+    <span>Профиль</span>
   </button>
 </div>
 
@@ -404,24 +560,38 @@ const initData = tg?.initData || '';
 if (tg) {
   tg.ready();
   tg.expand();
-  tg.setHeaderColor('#0f0f10');
-  tg.setBackgroundColor('#0f0f10');
+  // Пробуем раскрыть на весь экран (новый API)
+  try { tg.requestFullscreen?.(); } catch(e) {}
+  try {
+    tg.setHeaderColor?.('bg_color');
+    tg.setBackgroundColor?.('bg_color');
+  } catch(e) {}
+  tg.disableVerticalSwipes?.();
 }
 
 const state = {
   items: [], categories: [],
-  activeCategory: 'all', query: '',
-  currentItem: null, activeTab: 'catalog',
-  selectedFile: null, userTags: []
+  favorites: [],
+  activeCategory: 'all',
+  activeSort: 'new',
+  query: '',
+  activeTab: 'catalog',
+  selectedFile: null, userTags: [],
+  playerItems: [], playerIndex: 0,
 };
 
 const $ = id => document.getElementById(id);
+const titles = {
+  catalog: 'MellMem', favorites: 'Избранное',
+  upload: 'Загрузить', leaderboard: 'Рейтинг', profile: 'Профиль'
+};
 
 function toast(msg) {
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
-function haptic(type = 'light') { tg?.HapticFeedback?.impactOccurred(type); }
+function haptic(type = 'light') { tg?.HapticFeedback?.impactOccurred?.(type); }
+function hapticNotif(type = 'success') { tg?.HapticFeedback?.notificationOccurred?.(type); }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -435,21 +605,25 @@ function formatDuration(s) {
   const m = Math.floor(s / 60); const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, '0')}`;
 }
+function uploaderLabel(item) {
+  if (!item.uploader) return 'админ';
+  return '@' + (item.uploader.username || item.uploader.name || 'anon');
+}
 
-// ========== TAB SWITCHING ==========
+// ========== TAB SWITCH ==========
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
-
 function switchTab(tab) {
   state.activeTab = tab;
   haptic('light');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${tab}`));
-  const titles = { catalog: 'MellMem', upload: 'Загрузить футаж', leaderboard: 'Рейтинг', profile: 'Мой профиль' };
   $('page-title').textContent = titles[tab];
   $('sub-line').style.display = tab === 'catalog' ? 'block' : 'none';
 
+  if (tab === 'catalog') renderGrid();
+  if (tab === 'favorites') loadFavorites();
   if (tab === 'leaderboard') loadLeaderboard();
   if (tab === 'profile') loadProfile();
   if (tab === 'upload') loadCategoriesIntoSelect();
@@ -459,15 +633,28 @@ function switchTab(tab) {
 async function loadData() {
   try {
     const [i, c] = await Promise.all([
-      fetch(`${API}/api/footage`).then(r => r.json()),
+      fetch(`${API}/api/footage?sort=${state.activeSort}`, {
+        headers: initData ? { 'x-tg-init-data': initData } : {}
+      }).then(r => r.json()),
       fetch(`${API}/api/categories`).then(r => r.json())
     ]);
     state.items = i; state.categories = c;
     renderChips(); renderGrid();
   } catch (e) {
-    $('grid').innerHTML = `<div class="empty">Ошибка загрузки. Попробуйте позже.</div>`;
+    $('grid').innerHTML = `<div class="empty">Ошибка загрузки.<br>Попробуйте позже.</div>`;
   }
 }
+
+document.querySelectorAll('.sort-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    if (state.activeSort === tab.dataset.sort) return;
+    document.querySelectorAll('.sort-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    state.activeSort = tab.dataset.sort;
+    haptic('light');
+    loadData();
+  });
+});
 
 function renderChips() {
   const html = [
@@ -497,80 +684,220 @@ function renderGrid() {
   $('sub-line').textContent = `${state.items.length} нарезок · ${state.categories.length} категорий`;
 
   if (!filtered.length) {
-    $('grid').innerHTML = `<div class="empty">Ничего не нашлось.<br>Попробуйте другой запрос.</div>`;
+    $('grid').innerHTML = `<div class="empty">Ничего не нашлось.</div>`;
     return;
   }
 
-  $('grid').innerHTML = filtered.map(item => {
-    const uploader = item.uploader
-      ? `@${item.uploader.username || item.uploader.name || 'anon'}`
-      : 'админ';
-    return `
+  $('grid').innerHTML = filtered.map(item => renderCard(item)).join('');
+  bindCardEvents('grid', filtered);
+}
+
+function renderCard(item) {
+  const favClass = item.is_favorite ? 'on' : '';
+  const favIcon = item.is_favorite ? '♥' : '♡';
+  return `
     <div class="card" data-id="${item.id}">
-      <div class="preview">
-        ${item.preview_url ? `<img src="${item.preview_url}" loading="lazy" />` : ''}
-        ${item.duration ? `<div class="duration">${formatDuration(item.duration)}</div>` : ''}
+      ${item.preview_url ? `<img src="${item.preview_url}" loading="lazy" />` : ''}
+      <div class="overlay-top">
+        <div class="duration">${item.duration ? formatDuration(item.duration) : ''}</div>
+        <div class="fav-icon ${favClass}" data-fav="${item.id}">${favIcon}</div>
       </div>
-      <div class="meta">
+      <div class="overlay-bottom">
         <div class="title">${escapeHtml(item.title)}</div>
-        <div class="uploader-line">✎ ${escapeHtml(uploader)}</div>
         <div class="stats">
-          <span>↓ ${formatNumber(item.downloads || 0)}</span>
-          <button class="dl-btn" data-id="${item.id}" data-action="download">MP4</button>
+          <span>↓${formatNumber(item.downloads || 0)}</span>
+          <span>♥${formatNumber(item.favorites_count || 0)}</span>
         </div>
       </div>
-    </div>`;
-  }).join('');
+    </div>
+  `;
+}
 
-  $('grid').querySelectorAll('.card').forEach(card => {
+function bindCardEvents(gridId, items) {
+  $(gridId).querySelectorAll('.card').forEach(card => {
     card.addEventListener('click', (e) => {
-      if (e.target.dataset.action === 'download') {
+      if (e.target.dataset.fav) {
         e.stopPropagation();
-        downloadItem(parseInt(e.target.dataset.id));
+        toggleFavorite(parseInt(e.target.dataset.fav), e.target);
         return;
       }
-      openModal(parseInt(card.dataset.id));
+      const id = parseInt(card.dataset.id);
+      const idx = items.findIndex(i => i.id === id);
+      openPlayer(items, idx);
     });
   });
 }
 
-function openModal(id) {
-  const item = state.items.find(i => i.id === id);
-  if (!item) return;
-  state.currentItem = item;
+// ========== FAVORITES ==========
+async function loadFavorites() {
+  if (!initData) {
+    $('fav-grid').innerHTML = `<div class="empty">Открой через Telegram-бота</div>`;
+    return;
+  }
+  try {
+    const items = await fetch(`${API}/api/my-favorites`, {
+      headers: { 'x-tg-init-data': initData }
+    }).then(r => r.json());
+    state.favorites = items;
+    if (!items.length) {
+      $('fav-grid').innerHTML = `<div class="empty">Пока пусто.<br>Тапни ♡ на футаже, чтобы добавить.</div>`;
+      return;
+    }
+    $('fav-grid').innerHTML = items.map(item => renderCard(item)).join('');
+    bindCardEvents('fav-grid', items);
+  } catch (e) {
+    $('fav-grid').innerHTML = `<div class="empty">Ошибка загрузки</div>`;
+  }
+}
+
+async function toggleFavorite(id, btn) {
+  if (!initData) { toast('Открой через Telegram'); return; }
   haptic('medium');
-  $('modal-title').textContent = item.title;
-  const uploaderStr = item.uploader
-    ? `✎ @${item.uploader.username || item.uploader.name || 'anon'}`
-    : '✎ админ';
-  $('modal-stats').textContent =
-    `${uploaderStr} · ${formatNumber(item.downloads || 0)} ↓${item.duration ? ' · ' + formatDuration(item.duration) : ''}`;
-  $('modal-tags').innerHTML = (item.tags || []).map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('');
-  $('modal-video').innerHTML = `<video src="${item.video_url}" controls autoplay playsinline loop></video>`;
-  $('modal').classList.add('open');
+  try {
+    const res = await fetch(`${API}/api/favorite/${id}`, {
+      method: 'POST', headers: { 'x-tg-init-data': initData }
+    });
+    const { is_favorite } = await res.json();
+    // Update ALL instances of this card (in catalog, favorites tab, player)
+    document.querySelectorAll(`.fav-icon[data-fav="${id}"], .sl-btn.heart[data-heart="${id}"]`).forEach(el => {
+      el.classList.toggle('on', is_favorite);
+      if (el.classList.contains('fav-icon')) el.textContent = is_favorite ? '♥' : '♡';
+    });
+    // Update state
+    const item = state.items.find(i => i.id === id);
+    if (item) {
+      item.is_favorite = is_favorite;
+      item.favorites_count = (item.favorites_count || 0) + (is_favorite ? 1 : -1);
+    }
+    if (state.activeTab === 'favorites' && !is_favorite) {
+      loadFavorites();
+    }
+  } catch (e) {
+    toast('Ошибка');
+  }
 }
 
-function closeModal() {
-  $('modal').classList.remove('open');
-  $('modal-video').innerHTML = '';
-  state.currentItem = null;
+// ========== SWIPE PLAYER ==========
+function openPlayer(items, startIdx) {
+  state.playerItems = items;
+  state.playerIndex = startIdx;
+  haptic('medium');
+
+  const slides = items.map((item, i) => `
+    <div class="player-slide" data-idx="${i}" data-id="${item.id}">
+      <video src="${item.video_url}" playsinline loop preload="${i === startIdx ? 'auto' : 'metadata'}"></video>
+      <div class="sl-info">
+        <div class="sl-title">${escapeHtml(item.title)}</div>
+        <div class="sl-uploader">✎ ${escapeHtml(uploaderLabel(item))} · ↓${formatNumber(item.downloads || 0)}</div>
+        <div class="sl-tags">
+          ${(item.tags || []).map(t => `<span class="sl-tag">#${escapeHtml(t)}</span>`).join('')}
+        </div>
+      </div>
+      <div class="sl-actions">
+        <button class="sl-btn heart ${item.is_favorite ? 'on' : ''}" data-heart="${item.id}">${item.is_favorite ? '♥' : '♡'}</button>
+        <div class="sl-btn-label">${formatNumber(item.favorites_count || 0)}</div>
+        <button class="sl-btn download" data-dl="${item.id}">↓</button>
+        <div class="sl-btn-label">${formatNumber(item.downloads || 0)}</div>
+        <button class="sl-btn" data-share="${item.id}">⇪</button>
+      </div>
+    </div>
+  `).join('');
+
+  $('player-slides').innerHTML = slides;
+  $('player').classList.add('open');
+
+  // Прокрутить к стартовому слайду
+  setTimeout(() => {
+    const targetSlide = $('player-slides').children[startIdx];
+    if (targetSlide) {
+      $('player-slides').scrollTop = targetSlide.offsetTop;
+      playCurrentSlide(startIdx);
+    }
+    // Показать подсказку свайпа на первом открытии
+    if (!localStorage.getItem('mellmem_seen_swipe')) {
+      $('player-hint').classList.add('show');
+      localStorage.setItem('mellmem_seen_swipe', '1');
+      setTimeout(() => $('player-hint').classList.remove('show'), 2000);
+    }
+  }, 30);
+
+  // Отслеживаем видимый слайд
+  const slidesContainer = $('player-slides');
+  slidesContainer.onscroll = () => {
+    const idx = Math.round(slidesContainer.scrollTop / slidesContainer.clientHeight);
+    if (idx !== state.playerIndex) {
+      state.playerIndex = idx;
+      playCurrentSlide(idx);
+      haptic('light');
+    }
+  };
+
+  // Навешиваем действия на кнопки
+  $('player-slides').querySelectorAll('[data-heart]').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFavorite(parseInt(b.dataset.heart), b);
+    });
+  });
+  $('player-slides').querySelectorAll('[data-dl]').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      downloadItem(parseInt(b.dataset.dl));
+    });
+  });
+  $('player-slides').querySelectorAll('[data-share]').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const item = state.playerItems.find(i => i.id === parseInt(b.dataset.share));
+      if (item && tg) {
+        const url = `https://t.me/share/url?url=${encodeURIComponent(item.video_url)}&text=${encodeURIComponent(item.title)}`;
+        tg.openTelegramLink(url);
+      }
+    });
+  });
+
+  // Клик по видео — pause/play
+  $('player-slides').querySelectorAll('video').forEach(v => {
+    v.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (v.paused) v.play(); else v.pause();
+    });
+  });
 }
 
+function playCurrentSlide(idx) {
+  $('player-slides').querySelectorAll('video').forEach((v, i) => {
+    if (i === idx) {
+      v.currentTime = 0;
+      v.play().catch(() => {});
+    } else {
+      v.pause();
+    }
+  });
+}
+
+function closePlayer() {
+  $('player').classList.remove('open');
+  $('player-slides').querySelectorAll('video').forEach(v => v.pause());
+  $('player-slides').innerHTML = '';
+}
+$('player-close').addEventListener('click', closePlayer);
+
+// ========== DOWNLOAD ==========
 async function downloadItem(id) {
   haptic('medium');
-  const item = state.items.find(i => i.id === id);
-  if (!item) return;
   try {
     const res = await fetch(`${API}/api/download/${id}`, {
       method: 'POST',
-      headers: { 'x-tg-init-data': initData }
+      headers: initData ? { 'x-tg-init-data': initData } : {}
     });
     const data = await res.json();
-    item.downloads = data.downloads;
-    renderGrid();
+    const item = state.items.find(i => i.id === id) || state.playerItems.find(i => i.id === id);
+    if (item) item.downloads = data.downloads;
+
     if (tg?.downloadFile) {
       tg.downloadFile({ url: data.url, file_name: data.filename }, ok => {
-        if (ok) toast('Сохранено!');
+        if (ok) { toast('Сохранено!'); hapticNotif('success'); }
       });
     } else {
       const a = document.createElement('a');
@@ -583,15 +910,6 @@ async function downloadItem(id) {
   }
 }
 
-$('modal-close').addEventListener('click', closeModal);
-$('btn-download').addEventListener('click', () => {
-  if (state.currentItem) downloadItem(state.currentItem.id);
-});
-$('btn-share').addEventListener('click', () => {
-  if (!state.currentItem || !tg) return;
-  const url = `https://t.me/share/url?url=${encodeURIComponent(state.currentItem.video_url)}&text=${encodeURIComponent(state.currentItem.title)}`;
-  tg.openTelegramLink(url);
-});
 $('search').addEventListener('input', e => {
   state.query = e.target.value;
   renderGrid();
@@ -615,19 +933,15 @@ fileInput.addEventListener('change', e => {
 });
 
 function handleFile(f) {
-  if (f.size > 30 * 1024 * 1024) {
-    toast('Файл больше 30 MB');
-    return;
-  }
+  if (f.size > 30 * 1024 * 1024) { toast('Файл больше 30 MB'); return; }
   state.selectedFile = f;
   const url = URL.createObjectURL(f);
   $('drop-placeholder').style.display = 'none';
   $('file-preview').style.display = 'block';
+  // БЕЗ muted чтобы был звук
   $('file-preview').innerHTML = `
-    <video src="${url}" muted controls></video>
-    <div style="font-size: 12px; color: var(--hint); margin-top: 6px;">
-      ${escapeHtml(f.name)} · ${(f.size/1024/1024).toFixed(1)} MB
-    </div>
+    <video src="${url}" controls playsinline></video>
+    <div class="fname">${escapeHtml(f.name)} · ${(f.size/1024/1024).toFixed(1)} MB</div>
   `;
   dropZone.classList.add('filled');
   if (!$('f-title').value) {
@@ -666,10 +980,7 @@ function renderUserTags() {
 }
 
 $('upload-btn').addEventListener('click', async () => {
-  if (!initData) {
-    toast('Открой через Telegram бота');
-    return;
-  }
+  if (!initData) { toast('Открой через Telegram-бота'); return; }
   if (!state.selectedFile) { toast('Выбери файл'); return; }
   if (!$('f-title').value.trim()) { toast('Укажи название'); return; }
 
@@ -685,18 +996,14 @@ $('upload-btn').addEventListener('click', async () => {
 
   try {
     const res = await fetch(`${API}/api/user/upload`, {
-      method: 'POST',
-      headers: { 'x-tg-init-data': initData },
-      body: fd
+      method: 'POST', headers: { 'x-tg-init-data': initData }, body: fd
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'upload failed');
-
     toast(data.message || 'Отправлено!');
-    state.selectedFile = null;
-    state.userTags = [];
-    $('f-title').value = '';
-    $('f-source').value = '';
+    hapticNotif('success');
+    state.selectedFile = null; state.userTags = [];
+    $('f-title').value = ''; $('f-source').value = '';
     fileInput.value = '';
     $('file-preview').style.display = 'none';
     $('drop-placeholder').style.display = 'block';
@@ -704,6 +1011,7 @@ $('upload-btn').addEventListener('click', async () => {
     renderUserTags();
   } catch (e) {
     toast('Ошибка: ' + e.message);
+    hapticNotif('error');
   } finally {
     $('upload-btn').disabled = false;
     $('upload-btn').textContent = 'Отправить на модерацию';
@@ -715,79 +1023,61 @@ async function loadLeaderboard() {
   try {
     const list = await fetch(`${API}/api/leaderboard`).then(r => r.json());
     if (!list.length) {
-      $('lb-list').innerHTML = `<div class="empty">Пока никто не загружал футажи.<br>Будь первым!</div>`;
+      $('lb-list').innerHTML = `<div class="empty">Пока пусто.<br>Будь первым!</div>`;
       return;
     }
     $('lb-list').innerHTML = list.map((u, i) => {
       const rank = i + 1;
-      const rankClass = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
+      const rc = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
       const name = u.username ? '@' + u.username : (u.first_name || 'anon');
       const initial = (u.first_name || u.username || '?')[0].toUpperCase();
       return `
         <div class="lb-item">
-          <div class="lb-rank ${rankClass}">${rank}</div>
-          <div class="avatar">
-            ${u.photo_url ? `<img src="${u.photo_url}">` : escapeHtml(initial)}
-          </div>
+          <div class="lb-rank ${rc}">${rank}</div>
+          <div class="avatar">${u.photo_url ? `<img src="${u.photo_url}">` : escapeHtml(initial)}</div>
           <div class="lb-info">
             <div class="lb-name">${escapeHtml(name)}</div>
             <div class="lb-stat">${u.uploads_count} футажей</div>
           </div>
-          <div class="lb-dl">↓ ${formatNumber(u.total_downloads)}</div>
+          <div class="lb-dl">↓${formatNumber(u.total_downloads)}</div>
         </div>
       `;
     }).join('');
   } catch (e) {
-    $('lb-list').innerHTML = `<div class="empty">Ошибка загрузки</div>`;
+    $('lb-list').innerHTML = `<div class="empty">Ошибка</div>`;
   }
 }
 
 // ========== PROFILE ==========
 async function loadProfile() {
   if (!initData) {
-    $('profile-content').innerHTML = `
-      <div class="empty" style="padding: 80px 20px;">
-        Открой миниап через Telegram-бота<br>
-        чтобы увидеть профиль
-      </div>
-    `;
+    $('profile-content').innerHTML = `<div class="empty" style="padding: 80px 20px;">Открой миниап через Telegram-бота</div>`;
     return;
   }
   try {
-    const res = await fetch(`${API}/api/user/me`, {
-      headers: { 'x-tg-init-data': initData }
-    });
-    if (!res.ok) throw new Error('auth failed');
+    const res = await fetch(`${API}/api/user/me`, { headers: { 'x-tg-init-data': initData } });
+    if (!res.ok) throw new Error();
     const { user, footage } = await res.json();
     const name = user.username ? '@' + user.username : (user.first_name || 'User');
     const initial = (user.first_name || user.username || '?')[0].toUpperCase();
 
     let html = `
       <div class="profile-head">
-        <div class="avatar">
-          ${user.photo_url ? `<img src="${user.photo_url}">` : escapeHtml(initial)}
-        </div>
-        <div style="font-size: 17px; font-weight: 600;">${escapeHtml(name)}</div>
+        <div class="avatar">${user.photo_url ? `<img src="${user.photo_url}">` : escapeHtml(initial)}</div>
+        <div class="pname">${escapeHtml(name)}</div>
       </div>
       <div class="profile-stats">
-        <div class="stat-card">
-          <div class="n">${user.uploads_count || 0}</div>
-          <div class="l">Загружено</div>
-        </div>
-        <div class="stat-card">
-          <div class="n">${formatNumber(user.total_downloads_received || 0)}</div>
-          <div class="l">Скачиваний</div>
-        </div>
+        <div class="stat-card"><div class="n">${user.uploads_count || 0}</div><div class="l">Загружено</div></div>
+        <div class="stat-card"><div class="n">${formatNumber(user.total_downloads_received || 0)}</div><div class="l">Скачиваний</div></div>
       </div>
     `;
-
     if (footage.length) {
       html += `<div class="section-title">Мои футажи</div>`;
       html += footage.map(f => {
-        const statusText = { pending: 'На модерации', approved: 'Одобрено', rejected: 'Отклонено' }[f.status] || f.status;
+        const statusText = { pending: 'Модерация', approved: 'Одобрено', rejected: 'Отклонено' }[f.status] || f.status;
         return `
           <div class="my-footage-item">
-            ${f.preview_url ? `<img src="${f.preview_url}">` : `<div style="width:54px;height:80px;background:var(--bg2);border-radius:6px;"></div>`}
+            ${f.preview_url ? `<img src="${f.preview_url}">` : `<div style="width:50px;height:74px;background:var(--bg2);border-radius:8px;"></div>`}
             <div class="my-footage-info">
               <div class="t">${escapeHtml(f.title)}</div>
               <div class="s">
@@ -803,7 +1093,7 @@ async function loadProfile() {
     }
     $('profile-content').innerHTML = html;
   } catch (e) {
-    $('profile-content').innerHTML = `<div class="empty">Ошибка загрузки профиля</div>`;
+    $('profile-content').innerHTML = `<div class="empty">Ошибка</div>`;
   }
 }
 
