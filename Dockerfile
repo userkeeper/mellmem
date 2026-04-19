@@ -7,11 +7,11 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Сначала только package.json чтобы кэшировать слой с зависимостями
+# Копируем package.json и ставим зависимости
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
-# Потом весь код
+# Потом весь остальной код
 COPY . .
 
 EXPOSE 3000
