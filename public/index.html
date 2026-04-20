@@ -31,28 +31,26 @@
     overscroll-behavior-y: contain;
   }
   body {
-    padding-top: calc(env(safe-area-inset-top) + 44px);
     padding-bottom: calc(env(safe-area-inset-bottom) + 68px);
     min-height: 100vh;
-  }
-  body.has-tg-header {
-    padding-top: env(safe-area-inset-top);
   }
 
   /* Вкладки — простая видимость */
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* ========== STICKY HEADER (липкая шапка) ========== */
+  /* ========== STICKY HEADER (липкая шапка, прилеплена к самому верху) ========== */
   .sticky-head {
     position: sticky;
-    top: calc(env(safe-area-inset-top) + 44px);
+    top: 0;
     z-index: 10;
     background: var(--bg);
     border-bottom: 0.5px solid var(--border);
+    /* внутренний отступ сверху на safe-area + место для кнопок Telegram */
+    padding-top: calc(env(safe-area-inset-top) + 44px);
   }
   body.has-tg-header .sticky-head {
-    top: env(safe-area-inset-top);
+    padding-top: env(safe-area-inset-top);
   }
   .header {
     padding: 12px 16px 10px;
