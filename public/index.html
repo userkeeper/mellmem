@@ -28,33 +28,37 @@
     background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
     font-size: 15px; -webkit-font-smoothing: antialiased;
-    overscroll-behavior-y: contain;
+    overscroll-behavior: none;
+    /* Блокируем весь body-скролл — скроллится только .scroll-area внутри */
+    height: 100vh;
+    overflow: hidden;
   }
-  body {
-    padding: 0 0 68px;
-    min-height: 100vh;
-    /* safe-area сверху чтобы контент не залезал под Dynamic Island
-       + запас на кнопки Telegram "Закрыть" и "•••" в fullscreen режиме */
+
+  /* ========== APP SHELL ========== */
+  .app {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    /* Учёт safe-area + отступ на кнопки Telegram в fullscreen */
     padding-top: calc(env(safe-area-inset-top) + 44px);
   }
-  /* Если Telegram не в fullscreen — его хедер есть, лишний отступ не нужен */
-  body.has-tg-header {
+  body.has-tg-header .app {
     padding-top: env(safe-area-inset-top);
   }
 
-  /* ========== HEADER ========== */
+  /* Контейнер всех вкладок */
+  .tab-content {
+    display: none;
+    flex: 1; min-height: 0;
+    flex-direction: column;
+  }
+  .tab-content.active { display: flex; }
+
+  /* ========== HEADER (фиксированный вверху внутри вкладки) ========== */
   .header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: rgba(255,255,255,0.92);
-    backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    flex-shrink: 0;
+    background: var(--bg);
     border-bottom: 0.5px solid var(--border);
     padding: 12px 16px 10px;
-  }
-  @media (prefers-color-scheme: dark) {
-    .header { background: rgba(0,0,0,0.82); }
   }
   .header-row {
     display: flex; align-items: baseline; justify-content: space-between;
@@ -66,7 +70,7 @@
   .header .sub { font-size: 13px; color: var(--hint); flex-shrink: 0; }
 
   /* ========== SEARCH ========== */
-  .search-wrap { padding: 10px 16px 4px; }
+  .search-wrap { padding: 10px 16px 4px; flex-shrink: 0; background: var(--bg); }
   .search-wrap input {
     width: 100%; padding: 9px 14px;
     background: var(--bg2); border: none; border-radius: 10px;
@@ -77,6 +81,8 @@
 
   /* ========== SORT TABS ========== */
   .sort-tabs {
+    flex-shrink: 0;
+    background: var(--bg);
     padding: 8px 16px 0;
     display: flex; gap: 4px;
     border-bottom: 0.5px solid var(--border);
@@ -95,10 +101,13 @@
 
   /* ========== CHIPS ========== */
   .chips {
+    flex-shrink: 0;
+    background: var(--bg);
     padding: 10px 16px 8px;
     display: flex; gap: 6px;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    border-bottom: 0.5px solid var(--border);
   }
   .chips::-webkit-scrollbar { display: none; }
   .chip {
@@ -108,6 +117,15 @@
     white-space: nowrap; cursor: pointer;
   }
   .chip.active { background: var(--accent); color: var(--accent-text); }
+
+  /* ========== SCROLL AREA (скроллится только контент, шапка зафиксирована) ========== */
+  .scroll-area {
+    flex: 1; min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* отступ снизу для нижней навигации */
+    padding-bottom: calc(env(safe-area-inset-bottom) + 64px);
+  }
 
   /* ========== GRID 3-col ========== */
   .grid {
@@ -447,15 +465,16 @@
 </head>
 <body>
 
-<div class="header" id="header">
-  <div class="header-row">
-    <h1 id="page-title">MellMem</h1>
-    <div class="sub" id="sub-line">Загружаем…</div>
-  </div>
-</div>
+<div class="app">
 
 <!-- CATALOG TAB -->
 <div class="tab-content active" id="tab-catalog">
+  <div class="header">
+    <div class="header-row">
+      <h1>MellMem</h1>
+      <div class="sub" id="sub-line">Загружаем…</div>
+    </div>
+  </div>
   <div class="search-wrap">
     <input type="text" id="search" placeholder="Поиск: орёл, казино, крик…" />
   </div>
@@ -465,61 +484,93 @@
     <button class="sort-tab" data-sort="favorites">Топ по лайкам</button>
   </div>
   <div class="chips" id="chips"></div>
-  <div class="grid" id="grid">
-    <div class="loader">Загружаем футажи…</div>
+  <div class="scroll-area">
+    <div class="grid" id="grid">
+      <div class="loader">Загружаем футажи…</div>
+    </div>
   </div>
 </div>
 
 <!-- FAVORITES TAB -->
 <div class="tab-content" id="tab-favorites">
-  <div class="grid" id="fav-grid">
-    <div class="loader">Загружаем избранное…</div>
+  <div class="header">
+    <div class="header-row">
+      <h1>Избранное</h1>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <div class="grid" id="fav-grid">
+      <div class="loader">Загружаем избранное…</div>
+    </div>
   </div>
 </div>
 
 <!-- UPLOAD TAB -->
 <div class="tab-content" id="tab-upload">
-  <div class="upload-wrap">
-    <label>Видео файл (MP4, до 30 MB, до 60 сек)</label>
-    <div class="drop-zone" id="drop-zone">
-      <input type="file" id="file-input" accept="video/mp4,video/quicktime" />
-      <div id="drop-placeholder">
-        <div style="font-size: 15px; font-weight: 500;">📹 Выбрать файл</div>
-        <div class="hint">Лучше вертикальное 9:16, 5–15 сек</div>
+  <div class="header">
+    <div class="header-row">
+      <h1>Загрузить</h1>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <div class="upload-wrap">
+      <label>Видео файл (MP4, до 30 MB, до 60 сек)</label>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept="video/mp4,video/quicktime" />
+        <div id="drop-placeholder">
+          <div style="font-size: 15px; font-weight: 500;">📹 Выбрать файл</div>
+          <div class="hint">Лучше вертикальное 9:16, 5–15 сек</div>
+        </div>
+        <div id="file-preview" style="display:none;"></div>
       </div>
-      <div id="file-preview" style="display:none;"></div>
-    </div>
-    <label>Название</label>
-    <input type="text" id="f-title" placeholder="Например: ОРЁЛ!!!" />
-    <label>Категория</label>
-    <select id="f-category"></select>
-    <label>Теги (Enter чтобы добавить)</label>
-    <div class="tag-field" id="tags-wrap">
-      <input type="text" id="tag-input" placeholder="добавить тег..." />
-    </div>
-    <label>Ссылка на оригинал (опционально)</label>
-    <input type="text" id="f-source" placeholder="https://youtube.com/..." />
-    <button class="upload-btn" id="upload-btn">Отправить на модерацию</button>
-    <div class="upload-note">
-      ⚠️ Футажи проходят модерацию. Не загружай NSFW, рекламу или чужой контент без разрешения.<br><br>
-      ✓ Твоё имя подписывается к футажу. Каждое скачивание → +1 в рейтинг.
+      <label>Название</label>
+      <input type="text" id="f-title" placeholder="Например: ОРЁЛ!!!" />
+      <label>Категория</label>
+      <select id="f-category"></select>
+      <label>Теги (Enter чтобы добавить)</label>
+      <div class="tag-field" id="tags-wrap">
+        <input type="text" id="tag-input" placeholder="добавить тег..." />
+      </div>
+      <label>Ссылка на оригинал (опционально)</label>
+      <input type="text" id="f-source" placeholder="https://youtube.com/..." />
+      <button class="upload-btn" id="upload-btn">Отправить на модерацию</button>
+      <div class="upload-note">
+        ⚠️ Футажи проходят модерацию. Не загружай NSFW, рекламу или чужой контент без разрешения.<br><br>
+        ✓ Твоё имя подписывается к футажу. Каждое скачивание → +1 в рейтинг.
+      </div>
     </div>
   </div>
 </div>
 
 <!-- LEADERBOARD TAB -->
 <div class="tab-content" id="tab-leaderboard">
-  <div id="lb-list">
-    <div class="loader">Загружаем рейтинг…</div>
+  <div class="header">
+    <div class="header-row">
+      <h1>Рейтинг</h1>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <div id="lb-list">
+      <div class="loader">Загружаем рейтинг…</div>
+    </div>
   </div>
 </div>
 
 <!-- PROFILE TAB -->
 <div class="tab-content" id="tab-profile">
-  <div id="profile-content">
-    <div class="loader">Загружаем профиль…</div>
+  <div class="header">
+    <div class="header-row">
+      <h1>Профиль</h1>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <div id="profile-content">
+      <div class="loader">Загружаем профиль…</div>
+    </div>
   </div>
 </div>
+
+</div> <!-- /app -->
 
 <!-- SWIPE PLAYER -->
 <div class="player" id="player">
@@ -618,10 +669,6 @@ const state = {
 };
 
 const $ = id => document.getElementById(id);
-const titles = {
-  catalog: 'MellMem', favorites: 'Избранное',
-  upload: 'Загрузить', leaderboard: 'Рейтинг', profile: 'Профиль'
-};
 
 function toast(msg) {
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
@@ -656,8 +703,6 @@ function switchTab(tab) {
   haptic('light');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `tab-${tab}`));
-  $('page-title').textContent = titles[tab];
-  $('sub-line').style.display = tab === 'catalog' ? 'block' : 'none';
 
   if (tab === 'catalog') renderGrid();
   if (tab === 'favorites') loadFavorites();
