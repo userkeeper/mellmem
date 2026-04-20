@@ -28,17 +28,21 @@
     background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
     font-size: 15px; -webkit-font-smoothing: antialiased;
-    overscroll-behavior: none;
-    /* Блокируем весь body-скролл — скроллится только .scroll-area внутри */
-    height: 100vh;
+  }
+  html, body {
+    height: 100%;
     overflow: hidden;
+    position: fixed;
+    width: 100%;
+    overscroll-behavior: none;
   }
 
   /* ========== APP SHELL ========== */
   .app {
-    position: fixed; inset: 0;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
     display: flex; flex-direction: column;
-    /* Учёт safe-area + отступ на кнопки Telegram в fullscreen */
+    /* safe-area + место для кнопок Telegram в fullscreen */
     padding-top: calc(env(safe-area-inset-top) + 44px);
   }
   body.has-tg-header .app {
@@ -53,7 +57,7 @@
   }
   .tab-content.active { display: flex; }
 
-  /* ========== HEADER (фиксированный вверху внутри вкладки) ========== */
+  /* ========== HEADER ========== */
   .header {
     flex-shrink: 0;
     background: var(--bg);
@@ -118,13 +122,15 @@
   }
   .chip.active { background: var(--accent); color: var(--accent-text); }
 
-  /* ========== SCROLL AREA (скроллится только контент, шапка зафиксирована) ========== */
+  /* ========== SCROLL AREA (скроллится только контент) ========== */
   .scroll-area {
-    flex: 1; min-height: 0;
-    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     /* отступ снизу для нижней навигации */
-    padding-bottom: calc(env(safe-area-inset-bottom) + 64px);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 72px);
   }
 
   /* ========== GRID 3-col ========== */
@@ -654,7 +660,7 @@ if (tg) {
     tg.setHeaderColor?.('bg_color');
     tg.setBackgroundColor?.('bg_color');
   } catch(e) {}
-  tg.disableVerticalSwipes?.();
+  // НЕ вызываем disableVerticalSwipes — он блокирует внутренний скролл
 }
 
 const state = {
